@@ -1,0 +1,1047 @@
+<?php
+
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Render\Element;
+use Drupal\field\Entity\FieldStorageConfig;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\node\NodeInterface;
+use Drupal\node\Entity\Node;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\Core\Url;
+use Drupal\Core\Link;
+
+module_load_include('inc', 'sime_ajustes', 'includes/widget_form_alter');
+
+function sime_ajustes_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  if (preg_match('/user(?:_register)?_form/', $form_id)) {
+    $form['account']['notify']['#access'] = \Drupal::currentUser()->hasPermission('ver campos internos');
+    $form['account']['name']['#access'] = \Drupal::currentUser()->hasPermission('ver campos internos');
+    if (isset($form['field_cpi'])) {
+      asort($form['field_cpi']['widget']['#options']);
+      $form['field_cpi']['#states'] = [
+        'visible' => [
+          ':input[name="roles[gestion_cpi]"]' => ['checked' => TRUE],
+        ],
+      ];
+      if ($form_id == 'user_form' && \Drupal::currentUser()->id() != 1) {
+        $form['field_cpi']['#disabled'] = TRUE;
+        $form['field_cpi']['#access'] = !\Drupal::currentUser()->hasPermission('bypass cpi access');
+      }
+    }
+  }
+  $form['#attributes']['novalidate'] = 'novalidate';
+
+  //Ocultar filtro select CPI en los form si hay <= 1 CPI y agregar clases para js.
+  if(isset($form['field_listado_cpis']) && $form['field_listado_cpis']['#multiple']) {
+    $form['field_listado_cpis']['#attributes'] = [
+      'class' => ['listado-cpis-multiple']
+    ];
+    if(count($form['field_listado_cpis']['#options']) <= 1) {
+      $form['field_listado_cpis']['#access'] = FALSE;
+    }
+  }
+
+  //Ajustes campos size.
+  if(isset($form['field_documento_id_value'])) {
+    $form['field_documento_id_value']['#size'] = 15;
+  }
+  if(isset($form['field_numero_dni_value'])) {
+    $form['field_numero_dni_value']['#size'] = 15;
+  }
+
+  // Mostrar solo los cpi asignados al usuario actual con Rol supervisor.
+  sime_ajustes_mostrar_cpi_asignados($form);
+
+  if (preg_match('/^node_(cpi|nino|desarrollo|inscripcion)/', $form["#form_id"])) {
+    $form['actions']['submit']['#submit'][] = 'sime_ajustes_form_submit_redirect';
+  }
+
+  if (preg_match('/^node_inscripcion(_form|_edit_form)/', $form["#form_id"])) {
+    $form['#validate'][] = 'sime_ajustes_validate_salas';
+    // Deshabilitar el botón de agregar on niños nuevos
+    $widget = &$form['field_inscripcion']['widget'];
+    $add_more = &$widget['add_more'];
+    $add_more['#access'] = FALSE;
+
+    $max_delta = $widget['#max_delta'];
+
+    if (!empty($widget[$max_delta])) {
+      $year = &$widget[$max_delta]['subform']['field_ano']['widget'][0]['value'];
+    }
+
+    if (empty($widget[$max_delta]) || !empty($year['#default_value']) && $year['#default_value'] <= (date('Y'))) {
+      $add_more['#access'] = TRUE;
+    }
+
+    //Actualizar proximo paragraph(inscripcion).
+    if (!empty($widget[$max_delta]) && $max_delta > 0 && empty($year['#default_value'])) {
+      //Actualizar nuevo paragraph con el anno proximo.
+      $anno_anterior = &$widget[$max_delta-1]['subform']['field_ano']['widget'][0]['value']['#default_value'];
+      $next_year = new DrupalDateTime($anno_anterior);
+      $next_year = $next_year->modify('+1 year')->format('Y');
+      $widget[$max_delta]['subform']['field_ano']['widget'][0]['value']['#default_value'] = $next_year;
+      //Actualizar check inscripto con valor anterior.
+      $check_inscripto = &$widget[$max_delta-1]['subform']['field_inscripto']['widget']['value']['#default_value'];
+      $widget[$max_delta]['subform']['field_inscripto']['widget']['value']['#default_value'] = $check_inscripto;
+    }
+  }
+
+  if (preg_match('/^node_nino(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_nino_sala']['#disabled'] = TRUE;
+    if (!\Drupal::currentUser()->hasPermission('campos ausentismo nino')) {
+      $form['field_motivo']['#access'] = FALSE;
+      $form['field_ausente']['#access'] = FALSE;
+    }
+    unset($form['field_anno_mediciones']['widget'][0]['value']['#description']);
+    $form['field_anno_mediciones']['widget'][0]['value']['#date_part_order'] = ['year'];
+    if (\Drupal::currentUser()->id() != 1) {
+      $form['field_fecha_envio_inasistencias']['#access'] = FALSE;
+      $form['field_nino_sala']['#access'] = FALSE;
+      $form['field_anno_mediciones']['#disabled'] = TRUE;
+      $form['field_cambio_rezago']['#disabled'] = TRUE;
+      $form['field_con_rezago']['#disabled'] = TRUE;
+      $form['field_ultima_medicion']['#disabled'] = TRUE;
+      $form['field_primera_medicion']['#disabled'] = TRUE;
+    }
+    $form['field_select_cpis']['#access'] = FALSE;
+    $form['actions']['submit_inscripcion'] = [
+      '#type' => 'submit',
+      '#value' => 'Guardar e ir al paso siguiente: Inscripción',
+      '#name' => 'submit_inscripcion',
+      '#submit' => [
+        '::submitForm',
+        '::save',
+        'sime_ajustes_form_submit_wizard',
+      ],
+      '#weight' => $form['actions']['submit']['#weight'] - 1,
+      '#button_type' => $form['actions']['submit']['#button_type'],
+    ];
+
+    $form['#validate'][] = 'sime_ajustes_validate_dni_nino';
+    $form['#validate'][] = 'sime_ajustes_validate_nacimiento_nino';
+  }
+
+  if (preg_match('/^node_supervision_anual(_form|_edit_form)/', $form["#form_id"])) {
+    unset($form['field_ch_matafuegos']['widget'][0]['subform']['field_vencido_novencido']['widget']['#options']['_none']);
+    unset($form['field_ch_seguro']['widget'][0]['subform']['field_vencido_novencido']['widget']['#options']['_none']);
+    unset($form['field_ch_desinsectacion']['widget'][0]['subform']['field_realizado_norealizado']['widget']['#options']['_none']);
+    unset($form['field_ch_potabilidad_agua']['widget'][0]['subform']['field_realizado_norealizado']['widget']['#options']['_none']);
+    unset($form['field_ch_planos_evacuacion']['widget'][0]['subform']['field_realizado_norealizado']['widget']['#options']['_none']);
+    unset($form['field_ch_simulacro']['widget'][0]['subform']['field_realizado_norealizado']['widget']['#options']['_none']);
+    $form['#validate'][] = 'sime_ajustes_validate_form_vencido';
+  }
+
+  if (preg_match('/^node_cpi(_form|_edit_form)/', $form["#form_id"])) {
+    unset($form['field_direccion']['widget'][0]['subform']['field_jurisdiccion']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_casa']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_villa']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_partido'],
+          $form['field_direccion']['widget'][0]['subform']['field_barrio']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_localidad']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_manzana']);
+    unset($form['field_direccion']['widget'][0]['subform']['field_tipo_vivienda']);
+  }
+
+  if (preg_match('/^node_personal(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_select_cpis']['#access'] = FALSE;
+    // Ajustes en Personal. Si hay un solo CPI que salga por default en el select.
+/*    if (isset($form['field_cpi']) && is_null(\Drupal::request()->get('field_cpi')) &&
+      $route_name == 'node.add') {
+      $cant_cpis = count($form['field_cpi']['widget']['#options']);
+      if($cant_cpis == 2) {
+        unset($form['field_cpi']['widget']['#options']['_none']);
+        $cpi_value = reset($form['field_cpi']['widget']['#options']);
+        $form['field_cpi']['#value'] = $cpi_value;
+      }
+    }*/
+  }
+
+  // Ajustes en Casos.
+  if (preg_match('/^node_casos(_form|_edit_form)/', $form["#form_id"])) {
+
+    $form['#validate'][] = 'sime_ajustes_validate_node_casos';
+
+    $form['field_fecha_recordatorio']['#access'] = \Drupal::currentUser()->hasPermission('admin casos');
+
+    // Deshabilitar el botón de agregar en algunas situaciones
+    $widget = &$form['field_casos']['widget'];
+    $add_more = &$widget['add_more'];
+
+    $max_delta = $widget['#max_delta'];
+
+    if (!empty($widget[$max_delta])) {
+      $tipo_informe_widget = &$widget[$max_delta]['subform']['field_tipo_informe']['widget'];
+    }
+
+    if (empty($widget[$max_delta]) || empty($tipo_informe_widget['#default_value'])) {
+      if (\Drupal::currentUser()->id() != 1) {
+        $add_more['#access'] = FALSE;
+      }
+    }
+
+    // @TODO: Si el anterior esta para corregir y es primera intervención, debe
+    // enviar primera intervención, sino actualización.
+    // Ver $max_delta arriba.
+    if (!empty($widget[$max_delta]) && $max_delta > 0 && empty($tipo_informe_widget['#default_value'])) {
+      $tipo_informe_widget_anterior = &$widget[$max_delta-1]['subform']['field_tipo_informe']['widget'];
+      if (!empty($tipo_informe_widget_anterior['#default_value'])) {
+        $tipo_informe = reset($tipo_informe_widget_anterior['#default_value']);
+        $para_corregir = &$widget[$max_delta-1]['subform']['field_leido']['widget']['value']['#default_value'];
+        if ($tipo_informe == 'intervencion' && $para_corregir) {
+          unset($tipo_informe_widget['#options']['acualizacion']);
+        }
+        else {
+          unset($tipo_informe_widget['#options']['intervencion']);
+        }
+      }
+    }
+
+  }
+
+  // Rendicion, new nad edit, hide the day and set the initial date as the first date of the month
+  if (preg_match('/^node_rendicion/', $form["#form_id"])) {
+    $form['field_re_periodo']['widget'][0]['value']['#date_part_order'] = ['month', 'year'];
+    $form['field_re_periodo']['widget'][0]['value']['#default_value'] = DrupalDateTime::createFromArray(['year' => date('Y'), 'month' => date('n'), 'day' => 1]);
+  }
+
+  if (!preg_match('/^node_desarrollo_(1|2|3|4|5)/', $form["#form_id"])) {
+    $nino_id = \Drupal::request()->query->get('field_nino');
+    if (!empty($nino_id)) {
+      if (preg_match('/node_(.*)_form/', $form_id, $matches)) {
+        $secondary_content = \Drupal::entityTypeManager()->getStorage('node')->loadByProperties([
+          'type' => $matches[1],
+          'field_nino' => $nino_id,
+        ]);
+        if ($secondary_content = reset($secondary_content)) {
+          $response = new RedirectResponse($secondary_content->url('edit-form', ['query' => ['destination' => \Drupal::request()->query->get('destination')]]));
+          $response->send();
+        }
+      }
+    }
+  }
+}
+
+function sime_ajustes_form_submit_redirect($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  if (preg_match('/^node_cpi/', $form["#form_id"])) {
+    $form_state->setRedirect('view.cpi.page_1');
+  }
+  if (preg_match('/^node_(nino|inscripcion)/', $form["#form_id"])) {
+    $form_state->setRedirect('view.ninos.page_1');
+  }
+  if (preg_match('/^node_desarrollo_(1|2|3|4|5)/', $form["#form_id"])) {
+    $nino = \Drupal::request()->request->get('field_nino');
+    if (!empty($nino)) {
+      $nino = \Drupal::request()->request->get('field_nino')[0]['target_id'];
+      $nino = preg_match("/\((.+)\)/", $nino, $id);
+      $form_state->setRedirect('view.desarrollo_infantil.page_desarrollo_infantil', ['field_nino' => $id[1]]);
+    }
+  }
+}
+
+function sime_ajustes_form_submit_wizard($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $destination = \Drupal::request()->query->get('destination');
+  \Drupal::request()->query->remove('destination');
+  $options = [
+    'query' => [
+      'field_nino' => $form_state->hasValue('field_nino') ? $form_state->getValue('field_nino')[0]['target_id'] : $form_state->get('nid')
+    ]
+  ];
+  if (preg_match('/^node_nino(_form|_edit_form)/', $form["#form_id"])) {
+    $inscripcion_url = Url::fromUri('internal:/node/add/inscripcion', $options);
+    $form_state->setRedirectUrl($inscripcion_url);
+  }
+}
+
+// Obtener relacion comuna-cpis.
+function sime_ajustes_get_cpis_comunas() {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'cpi');
+  $node_ids = $query->execute();
+  $relacion_comunas = [];
+  if (!empty($node_ids)) {
+    foreach ($node_ids as $cpi) {
+      $cpi_comuna = Node::load($cpi)->field_comuna->value;
+      $relacion_comunas[$cpi_comuna][] = Node::load($cpi)->id();
+    }
+  }
+  return $relacion_comunas;
+}
+
+function sime_ajustes_page_attachments(array &$page) {
+  $page['#attached']['library'][] = 'sime_ajustes/admin';
+  $page['#attached']['drupalSettings']['simeAjustes']['comunas']  = sime_ajustes_get_cpis_comunas();
+  $page['#attached']['drupalSettings']['simeAjustes']['all_cpis'] = sime_ajustes_get_all_cpi();
+  if (\Drupal::currentUser()->id() != 1) {
+    $page['#attached']['library'][] = 'sime_ajustes/admin.restricted';
+  }
+}
+
+function sime_ajustes_library_info_alter(&$libraries, $extension) {
+  if ($extension == 'chosen') {
+    $libraries['drupal.chosen']['dependencies'][] = 'sime_ajustes/transliteration';
+    $libraries['drupal.chosen']['dependencies'][] = 'sime_ajustes/chosen';
+  }
+}
+
+function sime_ajustes_js_alter(&$javascript, \Drupal\Core\Asset\AttachedAssetsInterface $assets) {
+  $chosen_js = drupal_get_path('module', 'chosen') . '/js/chosen.js';
+  $sime_chosen_js = drupal_get_path('module', 'sime_ajustes') . '/js/chosen.js';
+  if (isset($javascript[$chosen_js])) {
+    // Swap weights so that our chosen.js is included next
+    $chosen_weight = $javascript[$chosen_js]['weight'];
+    $javascript[$chosen_js]['weight'] = $javascript[$sime_chosen_js]['weight'];
+    $javascript[$sime_chosen_js]['weight'] = $chosen_weight;
+  }
+}
+
+function sime_ajustes_css_alter(&$css, \Drupal\Core\Asset\AttachedAssetsInterface $assets) {
+  foreach (['admin.css', 'admin.restricted.css'] as $k => $admin_css_file) {
+    $admin_css = drupal_get_path('module', 'sime_ajustes') . '/css/' . $admin_css_file;
+    if (isset($css[$admin_css])) {
+      $css[$admin_css]['weight'] = 400 + $k/1000;
+    }
+  }
+}
+
+function sime_ajustes_allowed_values_field_sala(FieldStorageConfig $definition, ContentEntityInterface $entity = NULL, $cacheable) {
+  $options = [];
+  $cpi = sime_ajustes_get_cpi_sala($entity);
+  if (!empty($cpi)) {
+    foreach ($cpi->field_vacantes_salas as $sala) {
+      $field = $sala->entity->field_salas;
+      $sala_nombre = $field->getFieldDefinition()
+        ->getFieldStorageDefinition()
+        ->getOptionsProvider('value', $field->getEntity())->getPossibleOptions()[$field->value];
+      $options[$field->value] = $sala_nombre;
+    }
+  }
+  return $options;
+}
+
+function sime_ajustes_allowed_values_field_sala_nombre(FieldStorageConfig $definition, ContentEntityInterface $entity = NULL, $cacheable) {
+  $options = [];
+  $cpi = sime_ajustes_get_cpi_sala($entity);
+  if (!empty($cpi)) {
+    foreach ($cpi->field_vacantes_salas as $key => $sala) {
+      $field = $sala->entity->field_salas;
+      $sala_nombre = $field->getFieldDefinition()
+        ->getFieldStorageDefinition()
+        ->getOptionsProvider('value', $field->getEntity())->getPossibleOptions()[$field->value];
+      $options[$sala_nombre][$field->value.'-'.$key] = $sala->entity->field_nombre->value;
+    }
+  }
+  return $options;
+}
+
+// Mostrar todos los CPIs en un select. Se puede usar en los CT.
+function sime_ajustes_allowed_values_select_cpis(FieldStorageConfig $definition, ContentEntityInterface $entity = NULL, $cacheable) {
+  $cpis = sime_ajustes_get_all_cpi();
+  return $cpis;
+}
+
+function sime_ajustes_get_cpi_sala(ContentEntityInterface $entity) {
+  $parent_node = $entity->getParentEntity();
+  if (!$parent_node) {
+    $field_nino_nid = Drupal::request()->get('field_nino');
+    if ($field_nino_nid) {
+      $nino_node = Node::load($field_nino_nid);
+      if (isset($nino_node->field_cpi) && !$nino_node->field_cpi->isEmpty()) {
+        return $nino_node->field_cpi->entity;
+      }
+      else {
+        return [];
+      }
+    }
+  }
+  elseif (isset($parent_node->field_nino) && !$parent_node->field_nino->isEmpty()) {
+    return $parent_node->field_nino->entity->field_cpi->entity;
+  }
+  else {
+    return [];
+  }
+}
+
+// Saber si el usuario actual tiene el Rol $role_name.
+function _sime_ajustes_rol_usuario_logueado($role_name) {
+  return User::load(\Drupal::currentUser()->id())->hasRole($role_name);
+}
+
+// Mostrar solo los cpi asignados al usuario actual con Rol supervisor.
+function sime_ajustes_mostrar_cpi_asignados(&$form) {
+  if (preg_match('/supervision/', $form["#form_id"])) {
+    if (_sime_ajustes_rol_usuario_logueado('supervisor')) {
+    $current_user = \Drupal::entityTypeManager()->getStorage('user')->load(\Drupal::currentUser()->id());
+    $cpis_asignados = [ "_none" => "- Seleccione un valor -" ];
+    foreach ($current_user->field_cpi as $cpi) {
+      if ($cpi->entity) {
+        $cpis_asignados[] = $cpi->entity->label();
+      }
+    }
+    $form['field_cpi']['widget']['#options'] = $cpis_asignados;
+   }
+  }
+}
+
+/**
+ * Implements hook_system_breadcrumb_alter().
+ */
+function sime_ajustes_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb,
+    \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+
+  // Cambiar link del breadcrumb Inicio/Home por SIME
+  $breadcrumb_links = $breadcrumb->getLinks();
+  if (!empty($breadcrumb_links)) {
+    if (!preg_match('/^view.supervisiones/', $route_match->getRouteName())) {
+      $breadcrumb_links[0]->setText('SIME');
+    }
+  }
+}
+
+function sime_ajustes_validate_form_vencido(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = ['field_ch_matafuegos', 'field_ch_seguro', 'field_ch_desinsectacion', 'field_ch_potabilidad_agua', 'field_ch_planos_evacuacion', 'field_ch_simulacro'];
+  foreach ($fields as $index => $field) {
+    $value[] = $form_state->getValue($fields[$index]);
+    $message = 'El Campo '.strtoupper($form[$fields[$index]]['widget']['#title']). ' es obligatorio';
+    if (preg_match('/matafuegos|seguro/', $form[$fields[$index]]['#array_parents'][0])) {
+      if(is_null($value[$index][0]['subform']['field_vencido_novencido'][0]['value'])) {
+        $form_state->setErrorByName($fields[$index], $message);
+      }
+    }
+    elseif(is_null($value[$index][0]['subform']['field_realizado_norealizado'][0]['value'])) {
+       $form_state->setErrorByName($fields[$index], $message);
+    }
+  }
+}
+
+// Validar fecha de nacimiento del nino.
+function sime_ajustes_validate_nacimiento_nino(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  $fields = $values['field_datos_personales'][0]['subform'];
+  $fecha_nacimiento = $fields['field_fecha_de_nacimiento'][0]['value'];
+  if ($fecha_nacimiento instanceof \Drupal\Core\Datetime\DrupalDateTime) {
+    $year_nacimiento = (int) $fecha_nacimiento->format('Y');
+    $full_fecha = $fecha_nacimiento->format(DATETIME_DATE_STORAGE_FORMAT);
+    $fecha_old = (int) date('Y') - 5;
+    $fecha_mayor_cinco  = $year_nacimiento <= $fecha_old;
+    $hasta_current_date = $full_fecha > date(DATETIME_DATE_STORAGE_FORMAT);
+    if ($fecha_mayor_cinco) {
+      $form_state->setErrorByName('field_datos_personales][0][subform][field_fecha_de_nacimiento', 'El año de nacimiento tiene que ser mayor que el '.$fecha_old);
+    }
+    elseif ($hasta_current_date) {
+      $form_state->setErrorByName('field_datos_personales][0][subform][field_fecha_de_nacimiento', 'La fecha de nacimiento tiene que ser menor que la fecha actual');
+    }
+  }
+}
+// Validar casos.
+function sime_ajustes_validate_node_casos(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  foreach ($values['field_casos'] as $i => $casos) {
+    if (isset($casos['subform'])) {
+      $field_caso = $casos['subform']['field_tipo_caso'];
+      $field_caso_otro = $casos['subform']['field_tipo_caso_otro'];
+      if (!empty($field_caso) && !empty($field_caso_otro)) {
+        $select_otro = $field_caso[0]['value'];
+        $text_otro = trim($field_caso_otro[0]['value']);
+        if ($select_otro == 'otro' && empty($text_otro)) {
+        $form_state->setErrorByName('field_casos]['.$i.'][subform][field_tipo_caso_otro', 'El campo "Otro" en "Motivo de intervención" es obligatorio');
+        }
+      }
+    }
+  }
+}
+
+// Validar sala y nombre de sala, en form de Inscripcion.
+function sime_ajustes_validate_salas(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  $sala = $anno = [];
+  if (!empty($values['field_inscripcion']) && isset($values['field_inscripcion'][0]['subform'])) {
+    $anno[] = $values['field_inscripcion'][0]['subform']['field_ano'][0]['value'];
+    if (!empty($values['field_inscripcion'][0]['subform']['field_sala'])) {
+      $sala[] = $values['field_inscripcion'][0]['subform']['field_sala'][0]['value'];
+    }
+  }
+  foreach ($values['field_inscripcion'] as $i => $salas) {
+    if (isset($salas['subform'])) {
+      $anno_selected = $salas['subform']['field_ano'][0]['value'];
+      $sala_selected = NULL;
+      $field_sala = $salas['subform']['field_sala'];
+      $field_sala_nombre = $salas['subform']['field_sala_nombre'];
+      $field_inscripto = $salas['subform']['field_inscripto'];
+      if ($i != 0) {
+        if (in_array($anno_selected, $anno)) {
+          $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_ano', 'Un niño no puede estar inscripto en el mismo año más de una ves.');
+        }
+      }
+      if (!empty($field_sala)) {
+        $sala_selected = $field_sala[0]['value'];
+        if ($i != 0) {
+          if (in_array($sala_selected, $sala)) {
+            $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_sala', 'Un niño no puede pertenecer a la misma Sala.');
+          }
+        }
+      }
+      if (!empty($field_sala) && !empty($field_sala_nombre) && !empty($field_inscripto)) {
+        $sala_selected = $field_sala[0]['value'];
+        $inscripto = $field_inscripto['value'];
+        $sala_nombre_selected = $field_sala_nombre[0]['value'];
+        if ($inscripto && !preg_match("/^$sala_selected/", $sala_nombre_selected)) {
+        $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_sala_nombre', 'El Nombre de la Sala tiene que pertenecer a la sala seleccionada.');
+        }
+        if ($i != 0) {
+          if (in_array($sala_selected, $sala)) {
+            $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_sala', 'Un niño no puede pertenecer a la misma Sala.');
+          }
+        }
+      }
+      elseif ($field_inscripto['value'] && empty($field_sala_nombre[0]['value'])) {
+        $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_sala_nombre', 'No puede estar inscripto sin Nombre de la sala.');
+      }
+      elseif ($field_inscripto['value'] && !empty($field_sala_nombre[0]['value']) &&
+        empty($field_sala[0]['value'])) {
+        $form_state->setErrorByName('field_inscripcion]['.$i.'][subform][field_sala', 'Seleccione la Sala.');
+      }
+      $anno[] = $anno_selected;
+      if ($sala_selected) {
+        $sala[] = $sala_selected;
+      }
+    }
+  }
+}
+
+// Validar campos nino.
+function sime_ajustes_validate_dni_nino(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $values = $form_state->getValues();
+  // Variable para verificar si es el mismo ID(numero de documento) en la edicion del nodo.
+  $mismo_numero = FALSE;
+  $fields = $values['field_datos_personales'][0]['subform'];
+  // Obtener los valores de los campos del Paragraph - Datos personales.
+  $numero_dni = $fields['field_numero_dni'][0]['value'];
+  $sin_dni = $fields['field_sin_dni']['value'];
+  $tipo_documento = empty($fields['field_tipo_documento']) ? NULL : $fields['field_tipo_documento'][0]['value'];
+  $numero_documento = trim($fields['field_documento_id'][0]['value']);
+
+  if ($sin_dni) {
+    if(is_null($tipo_documento)) {
+        $form_state->setErrorByName('field_datos_personales][0][subform][field_tipo_documento', 'El campo Tipo de Documento es obligatorio');
+      }
+    elseif(empty($numero_documento)) {
+      $form_state->setErrorByName('field_datos_personales][0][subform][field_documento_id][0', 'El campo Número es obligatorio');
+    }
+    else {
+      if (preg_match('/^node_nino(_edit_form)/', $form["#form_id"])) {
+        $mismo_numero = sime_ajustes_node_edit($sin_dni, $numero_documento, $tipo_documento);
+      }
+      $nino_existe = sime_ajustes_nino_duplicado($numero_documento, $tipo_documento);
+      if (!$mismo_numero && $nino_existe) {
+        $form_state->setErrorByName('field_datos_personales][0][subform][field_documento_id][0', 'El Número de Documento ya existe');
+      }
+    }
+  }
+  else {
+    if(empty($numero_dni)) {
+      $form_state->setErrorByName('field_datos_personales][0][subform][field_numero_dni][0', 'El campo Número de DNI es obligatorio');
+    }
+    else {
+      if (preg_match('/^node_nino(_edit_form)/', $form["#form_id"])) {
+        $mismo_numero = sime_ajustes_node_edit($sin_dni, $numero_dni, NULL);
+      }
+      $nino_existe = sime_ajustes_nino_duplicado($numero_dni, NULL);
+       if (!$mismo_numero && $nino_existe) {
+        $form_state->setErrorByName('field_datos_personales][0][subform][field_numero_dni][0', 'El Número de DNI ya existe');
+      }
+    }
+  }
+}
+
+// Verificar si el nino(numero) ya existe.
+function sime_ajustes_nino_duplicado($numero_documento, $tipo_documento) {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'nino');
+  $ninos_ids = $query->execute();
+
+  foreach ($ninos_ids as $nid) {
+    $nino = Node::load($nid);
+     foreach ($nino->field_datos_personales as $field) {
+       $field_nino = $field->get('entity')->getTarget()->getValue();
+
+        if(is_null($tipo_documento)) {
+          if ($field_nino->field_numero_dni->value == $numero_documento) {
+            return TRUE;
+          }
+        }
+        else {
+          if($field_nino->field_tipo_documento->value == $tipo_documento &&
+             $field_nino->field_documento_id->value == $numero_documento) {
+            return TRUE;
+          }
+        }
+     }
+  }
+  return FALSE;
+}
+
+// Verificar si esta en la edicion del node(nino) si
+// el numero de ID es el mismo que habia.
+function sime_ajustes_node_edit($checked, $numero_documento, $tipo_documento) {
+  $node = \Drupal::routeMatch()->getParameter('node');
+  if ($node instanceof \Drupal\node\NodeInterface) {
+    $nino = Node::load($node->id());
+    $field = $nino->field_datos_personales->entity;
+    if ($checked) {
+      $numero = $field->get('field_documento_id')->getValue();
+      $tipo = $field->get('field_tipo_documento')->getValue();
+      if (empty($numero) || empty($tipo)) {
+        return FALSE;
+      }
+      $numero = $numero[0]['value'];
+      $tipo = $tipo[0]['value'];
+      return ($numero == $numero_documento && $tipo == $tipo_documento);
+    }
+    else {
+      $numero = $field->get('field_numero_dni')->getValue();
+      if (empty($numero)) {
+        return FALSE;
+      }
+      $numero = $numero[0]['value'];
+      return ($numero == $numero_documento);
+    }
+  }
+}
+
+// Enviar correo cuando se cree/actualice un informe.
+function sime_ajustes_notificar_informe($entity, $index_form) {
+  $users = sime_ajustes_get_all_users();
+  $correos = [];
+  foreach ($users as $user) {
+    if ($user->hasPermission('notificacion casos') && $user->getEmail() && $user->id() != 1) {
+      $correos[] = $user->getEmail();
+    }
+  }
+  $correos = implode(', ', $correos);
+  sime_ajustes_enviar_correos($correos, 'notificar_informe', $entity, $index_form);
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+$motivo = $fecha_envio = $intervencion = $tipo_caso = NULL;
+// Variable global para permitir acceder al informe especifico.
+$index_form_save = 0;
+function sime_ajustes_entity_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  global $motivo, $fecha_envio, $intervencion, $tipo_caso, $index_form_save;
+
+  // Actualizar campos en nino desde inscripcion.
+  $node_inscripcion = $entity->getEntityTypeId() == 'node' && $entity->bundle() == 'inscripcion';
+  if ($node_inscripcion) {
+    $inscripciones_nino = $entity->field_inscripcion->referencedEntities();
+    if (!empty($inscripciones_nino)) {
+      $ultima_inscripcion = end($inscripciones_nino);
+      $nino = $entity->field_nino->entity;
+      if (isset($nino)) {
+        $nino->field_inscripto->value = $ultima_inscripcion->field_inscripto->value;
+        $nino->field_nino_sala->value = NULL;
+        if ($nino->field_inscripto->value) {
+          $nino->field_nino_sala->value = $ultima_inscripcion->field_sala->value;
+        }
+        if (!$nino->field_inscripcion_fecha->value && $ultima_inscripcion->field_inscripto->value) {
+          $nino->field_inscripcion_fecha->value = date(DATETIME_DATE_STORAGE_FORMAT);
+        }
+        $nino->save();
+      }
+    }
+  }
+
+  // Actualizar sala segun nombre de sala en node(paragraph) inscripcion.
+  $is_inscripcion = $entity instanceof Paragraph && $entity->bundle() == 'inscripcion';
+  if ($is_inscripcion) {
+    $parent_node = $entity->getParentEntity();
+    if (isset($parent_node)) {
+      $cpi = $parent_node->field_nino->entity->field_cpi->entity->id();
+      $options = sime_inasistencias_get_salas($cpi, $entity->field_sala_nombre->value);
+      $sala = $options['nombre_pertenece'];
+      if (!$entity->field_sala->value) {
+        $entity->field_inscripto->value = FALSE;
+        $entity->field_sala_nombre->value = '_none';
+      }
+      if ($entity->field_inscripto->value) {
+        $entity->field_sala->value = $sala;
+      }
+      else {
+        $entity->field_sala_nombre->value = '_none';
+      }
+    }
+  }
+
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'nino') {
+    $fields = $entity->field_datos_personales->entity;
+    $sin_dni = $fields->get('field_sin_dni')->getValue();
+    $sin_dni = $sin_dni[0]['value'];
+    //si sin_dni is check, pone en ("") Numero de DNI.
+    if($sin_dni) {
+      $fields->set('field_numero_dni', '');
+      $fields->save();
+    }
+    // Actualizar el select cpi del CT nino.
+    $cpi = $entity->get('field_cpi')->getValue()[0]['target_id'];
+    if (isset($cpi)) {
+      $entity->field_select_cpis->value = $cpi;
+    }
+  }
+  // Despublicar si una persona ya no trabaja en un CPI.
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'personal') {
+    if (!$entity->field_trabaja->value) {
+      $entity->status->value = FALSE;
+    }
+    // Actualizar el select cpi del CT Persona.
+    $cpi = $entity->get('field_cpi')->getValue()[0]['target_id'];
+    if (isset($cpi)) {
+      $entity->field_select_cpis->value = $cpi;
+    }
+  }
+  $is_informe = $entity instanceof Paragraph && $entity->bundle() == 'casos';
+  $is_casos = $entity->getEntityTypeId() == 'node' && $entity->bundle() == 'casos';
+  // Enviar correo cuando se cree/actualice un informe.
+  $index_form_save = (int) $index_form_save;
+  if ($is_informe && $entity->isChanged()) {
+    sime_ajustes_notificar_informe($entity, $index_form_save);
+  }
+  // - Actualizar Motivo de intervención y Fecha última actualización.
+  // - Actualizar Fecha de envio e intervencion.
+  // - Actualizar Tipo de caso.
+  // - Siempre toma los datos del 1er informe que sea 1ra intervencion, que no este para corregir
+  //   y que la fecha de envio(notificacion) este definida.(La fecha envio es el OK del informe).
+  if ($is_informe && $entity->field_tipo_informe->value == 'intervencion') {
+    $motivo = ucfirst($entity->field_tipo_caso->value);
+    if ($entity->field_tipo_caso->value == 'otro') {
+      $motivo = 'otro:' . ucfirst($entity->field_tipo_caso_otro->value);
+    }
+    if (!$entity->field_leido->value && $entity->field_fecha_envio->value) {
+      $fecha_envio = $entity->field_fecha_envio->value;
+      $intervencion = $entity->field_intervencion->value;
+      $tipo_caso = $entity->field_tipo_informe->value;
+    }
+  }
+  if ($is_casos) {
+    if ($entity->field_motivo_intervencion->value != $motivo) {
+      $entity->field_fecha_update->value = date(DATETIME_DATE_STORAGE_FORMAT);
+    }
+    if ($fecha_envio && $fecha_envio > $entity->field_fecha_envio->value) {
+      $entity->field_fecha_envio->value = $fecha_envio;
+    }
+    $entity->field_motivo_intervencion->value = $motivo;
+    $entity->field_intervencion->value = $intervencion;
+    $entity->field_tipo_caso->value = $tipo_caso;
+  }
+  $index_form_save++;
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function sime_ajustes_entity_insert(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'nino') {
+    // Enviar correo(nuevo nino inscripto).
+    if ($entity->field_inscripto->value) {
+      sime_ajustes_notificar_users('notificar_nino_nuevo', 'altas bajas ninos', $entity);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+// Variable global para permitir acceder al informe especifico.
+$index_form_corregir = 0;
+function sime_ajustes_entity_update(Drupal\Core\Entity\EntityInterface $entity) {
+  global $index_form_corregir;
+  if ($entity instanceof Paragraph && $entity->bundle() == 'casos') {
+    // Cuando el admin de casos marque un informe para corregir.
+    if (\Drupal::currentUser()->hasPermission('admin casos') && \Drupal::currentUser()->id() != 1) {
+      $status_original = $entity->original->field_leido->value;
+      $status_nuevo = $entity->field_leido->value;
+      // Si admin casos marco el informe para corregir.
+      if ($status_nuevo > $status_original) {
+        // Enviar correos a responsables del CPI.
+        sime_ajustes_corregir_informe($entity, (int) $index_form_corregir);
+      }
+      $index_form_corregir++;
+    }
+  }
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'nino') {
+     $inscripto_original = $entity->original->field_inscripto->value;
+     $inscripto_nuevo = $entity->field_inscripto->value;
+     if ($inscripto_original < $inscripto_nuevo) {
+      // Enviar correo(nuevo nino inscripto).
+      sime_ajustes_notificar_users('notificar_nino_nuevo', 'altas bajas ninos', $entity);
+     }
+     elseif ($inscripto_original > $inscripto_nuevo) {
+      // Enviar correo(nino eliminado (NO inscripto)).
+      sime_ajustes_notificar_users('notificar_nino_eliminado', 'altas bajas ninos', $entity);
+     }
+  }
+}
+
+//Notificar a correos de usuarios con un permiso determinado.
+function sime_ajustes_notificar_users($key, $permiso, $entity) {
+  $users = sime_ajustes_get_all_users();
+  $correos = [];
+  foreach ($users as $user) {
+    if ($user->hasPermission($permiso) && $user->getEmail() && $user->id() != 1) {
+      $correos[] = $user->getEmail();
+    }
+  }
+  $correos = implode(', ', $correos);
+  sime_ajustes_enviar_correos($correos, $key, $entity);
+}
+
+// Obtener todos los usuarios.
+function sime_ajustes_get_all_users() {
+  $query = \Drupal::entityQuery('user');
+  $users_id = $query->execute();
+  $users = \Drupal::entityTypeManager()->getStorage('user')->loadMultiple($users_id);
+  return $users;
+}
+
+// Obtener todos los cpi.
+function sime_ajustes_get_all_cpi() {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'cpi');
+  $node_ids = $query->execute();
+  $listado_cpis = [];
+  if (!empty($node_ids)) {
+    foreach ($node_ids as $cpi) {
+      $listado_cpis[$cpi] = Node::load($cpi)->title->value;
+    }
+  }
+  return $listado_cpis;
+}
+
+// Obtener total de ninos inscriptos por CPI.
+function sime_ajustes_total_ninos_cpi() {
+  $query = db_select('node__field_cpi', 'cpi');
+  $query->addField('cpi', 'field_cpi_target_id');
+  $query->addExpression("COUNT(*)", 'total');
+  $query->leftJoin('node__field_inscripto', 'ins', 'ins.entity_id = cpi.entity_id AND ins.revision_id = cpi.revision_id');
+  $query->condition('ins.field_inscripto_value', 1);
+  $query->groupBy('cpi.field_cpi_target_id');
+  $totales_ninos = $query->execute()->fetchAllAssoc('field_cpi_target_id');
+  return $totales_ninos;
+}
+
+// Enviar correos para corregir informes.
+function sime_ajustes_corregir_informe($informe, $index_form) {
+  $users = sime_ajustes_get_all_users();
+  $node_caso_id = $informe->parent_id->value;
+  $node_caso = Node::load($node_caso_id);
+  // Obtengo el nino que le corresponden los informes.
+  $nino = $node_caso->field_nino->entity;
+  // Obtengo el cpi al que pertenece el nino.
+  $cpi_asignado = isset($nino) ? $nino->field_cpi->entity : NULL;
+  $cpi_asignado = isset($cpi_asignado) ? $cpi_asignado->id() : NULL;
+  $correos_cpi = [];
+  foreach ($users as $user) {
+    if ($user->hasPermission('admin cpi') && $user->getEmail() && $user->id() != 1) {
+      $cpi = $user->field_cpi->entity;
+      if (isset($cpi)) {
+        // Si hay algun usuario que sea del CPI del que pertenece el nino.
+        // Obtener correo.
+        if ($cpi->id() == $cpi_asignado) {
+          $correos_cpi[] = $user->getEmail();
+        }
+      }
+    }
+  }
+  $correos_cpi = implode(', ', $correos_cpi);
+  sime_ajustes_enviar_correos($correos_cpi, 'corregir_informe', $informe, $index_form);
+}
+
+function sime_ajustes_enviar_correos($correos, $key, $entity, $index_form = NULL) {
+  $current_path = \Drupal::service('path.current')->getPath();
+  $informe = Link::fromTextAndUrl('Ver informe', Url::fromUri('base:' . $current_path, [
+      'query' => ['destination' => \Drupal::request()->query->get('destination')],
+      'fragment' => "field-casos-$index_form-item-wrapper",
+      'absolute' => TRUE]))->toString();
+  if ($key == 'notificar_informe') {
+    $mensaje  = "Informe nuevo o actualizado.\n" . $informe;
+  }
+  if ($key == 'notificar_nino_eliminado') {
+    $mensaje = "La inscripción de un niño ha sido dada de baja.\n" . $entity->url('canonical', ['absolute' => TRUE]);
+  }
+  if ($key == 'notificar_nino_nuevo') {
+    $mensaje = "La inscripción de un niño ha sido dada de alta.\n" . $entity->url('canonical', ['absolute' => TRUE]);
+  }
+  elseif ($key == 'corregir_informe') {
+    $mensaje  = "Informe enviado para corregir.\n" . $informe;
+  }
+  $mailManager = \Drupal::service('plugin.manager.mail');
+  $langcode = \Drupal::currentUser()->getPreferredLangcode();
+  $params['message'] = $mensaje;
+  $params['node_title'] = 'Nuevo correo';
+  if (!is_array($correos)) {
+    $correos = preg_split('/,/', $correos);
+  }
+  foreach ($correos as $correo) {
+    $result = $mailManager->mail('sime_ajustes', $key, $correo, $langcode, $params, NULL, TRUE);
+  }
+}
+
+/**
+* Implements hook_mail().
+*/
+function sime_ajustes_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'notificar_informe':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = 'Nuevo/Actualizado informe.';
+      $message['body'][] = $params['message'];
+      break;
+    case 'corregir_informe':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = 'Informe para corregir.';
+      $message['body'][] = $params['message'];
+      break;
+    case 'notificar_nino_eliminado':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = 'Niño dado de baja.';
+      $message['body'][] = $params['message'];
+      break;
+    case 'notificar_nino_nuevo':
+      $message['from'] = \Drupal::config('system.site')->get('mail');
+      $message['subject'] = 'Niño dado de alta.';
+      $message['body'][] = $params['message'];
+      break;
+  }
+}
+
+/**
+ * Implements hook_node_access_records().
+ */
+function sime_ajustes_node_access_records(\Drupal\node\NodeInterface $node) {
+  $grants = [];
+  $node_type = $node->getType();
+  if($node_type == 'cpi') {
+    $grants[] = [
+      'realm' => 'ver_editar_contenido_propio',
+      'gid' => $node->id(),
+      'grant_view' => 1,
+      'grant_update' => 1,
+      'grant_delete' => 0,
+    ];
+  }
+
+  $grants[] = [
+    'realm' => 'ver_todos_' . $node->bundle(),
+    'gid' => 1,
+    'grant_view' => 1,
+    'grant_update' => 0,
+    'grant_delete' => 0,
+  ];
+
+  if (isset($node->field_cpi) && !$node->field_cpi->isEmpty()) {
+    $cpis = $node->field_cpi->referencedEntities();
+    foreach ($cpis as $cpi) {
+      $grants[] = [
+        'realm' => 'ver_editar_contenido_propio',
+        'gid' => $cpi->id(),
+        'grant_view' => 1,
+        'grant_update' => 1,
+        'grant_delete' => 0,
+      ];
+    }
+  }
+  elseif (isset($node->field_nino) && !$node->field_nino->isEmpty()) {
+    $nino = $node->field_nino->entity;
+    if (isset($nino->field_cpi) && !$nino->field_cpi->isEmpty()) {
+      $cpis = $nino->field_cpi->referencedEntities();
+      if (!empty($cpis)) {
+        foreach ($cpis as $cpi) {
+          $grants[] = [
+            'realm' => 'ver_editar_contenido_propio',
+            'gid' => $cpi->id(),
+            'grant_view' => $node_type == 'datos_antropometricos' ? 0 : 1,
+            'grant_update' => $node_type == 'datos_antropometricos' ? 0 : 1,
+            'grant_delete' => 0,
+          ];
+        }
+      }
+    }
+  }
+  return $grants;
+}
+
+/**
+ * Implements hook_node_grants().
+ *
+ */
+function sime_ajustes_node_grants(Drupal\Core\Session\AccountInterface $account, $op) {
+  $grants = [];
+  if (\Drupal::currentUser()->isAuthenticated()) {
+    $user = \Drupal::entityManager()->getStorage('user')->load($account->id());
+    if ($user->hasPermission('bypass node access')) {
+      // Ver todos.
+      // gid to view, update and delete.
+      return $grants['ver_editar_contenido_propio'][] = 0;
+    }
+
+    if (!$account->hasPermission('bypass cpi access')) {
+      if (isset($user->field_cpi) && !$user->field_cpi->isEmpty()) {
+        $cpis = $user->field_cpi->referencedEntities();
+        foreach ($cpis as $cpi) {
+          $grants['ver_editar_contenido_propio'][] = $cpi->id();
+        }
+      }
+    }
+
+    if ($account->hasPermission('admin ver todos cpis')) {
+      $grants['ver_todos_cpi'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todos ninos')) {
+      $grants['ver_todos_nino'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todos inasistencias')) {
+      $grants['ver_todos_inasistencias'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todos inscripciones')) {
+      $grants['ver_todos_inscripcion'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todas nutriciones')) {
+      $grants['ver_todos_supervision_nutricion'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todas supervisiones')) {
+      $grants['ver_todos_supervision_anual'][] = 1;
+      $grants['ver_todos_supervision'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todas planificacion')) {
+      $grants['ver_todos_planificacion'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todo personal')) {
+      $grants['ver_todos_personal'][] = 1;
+    }
+    if ($account->hasPermission('admin ver todo desarrollo infantil')) {
+      $grants['ver_todos_desarrollo_1'][] = 1;
+      $grants['ver_todos_desarrollo_2'][] = 1;
+      $grants['ver_todos_desarrollo_3'][] = 1;
+      $grants['ver_todos_desarrollo_4'][] = 1;
+      $grants['ver_todos_desarrollo_5'][] = 1;
+    }
+    if ($account->hasPermission('admin listado casos')) {
+      $grants['ver_todos_casos'][] = 1;
+    }
+  }
+  return $grants;
+}
+
+/**
+ * Implements hook_email_registration_name().
+ *
+ * Asignar un usuario nombre.apellido automáticamente.
+ */
+function sime_ajustes_email_registration_name(UserInterface $account) {
+  return email_registration_cleanup_username($account->field_nombre->value . '.' . $account->field_apellido->value);
+}

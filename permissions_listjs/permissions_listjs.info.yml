@@ -1,0 +1,4 @@
+name: Permissions ListJs
+type: module
+description: 'Allows to filter the permission list'
+core: '8.x'

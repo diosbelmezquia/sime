@@ -1,0 +1,78 @@
+<div class="nino-block-diagnostico-antromometrico">
+   <div class="diagnostico-acta">
+     {{ acta }}
+   </div>
+   <h2>Datos antropométricos</h2>
+   <div class="nino-block-diagnostico-antromometrico-talla">
+      <h3>Talla/edad</h3>
+      <ul class="diagnostico-lista">
+        {% for talla in diagnostico_talla %}
+          {% if talla %}
+            <li class="cuadro-{{ talla.color }}">
+              <span><strong>{{ talla.fecha }}</strong></span><br>
+              <span>{{ talla.clasificacion }}</span>
+            </li>
+          {% endif %}
+        {% endfor %}
+     </ul>
+
+     {% if ultima_talla %}
+        <h3>Ultima Talla</h3>
+        <ul class="diagnostico-lista">
+          <li class="cuadro-{{ ultima_talla.color }}">
+            <span><strong>{{  ultima_talla.fecha }}</strong></span><br>
+            <span>{{ ultima_talla.clasificacion }}</span>
+          </li>
+        </ul>
+     {% endif %}
+   </div>
+
+   <div class="nino-block-diagnostico-antromometrico-peso">
+    <h3>Peso/edad</h3>
+    <ul class="diagnostico-lista">
+      {% for peso in diagnostico_peso %}
+        {% if peso %}
+          <li class="cuadro-{{ peso.color }}">
+            <span><strong>{{ peso.fecha }}</strong></span><br>
+            <span>{{ peso.clasificacion }}</span>
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+
+    {% if ultimo_peso %}
+      <h3>Ultimo peso</h3>
+      <ul class="diagnostico-lista">
+        <li class="cuadro-{{ ultimo_peso.color }}">
+          <span><strong>{{  ultimo_peso.fecha }}</strong></span><br>
+          <span>{{ ultimo_peso.clasificacion }}</span>
+        </li>
+      </ul>
+    {% endif %}
+  </div>
+
+  <div class="nino-block-diagnostico-antromometrico-imc">
+    <h3>IMC/edad</h3>
+    <ul class="diagnostico-lista">
+      {% for imc in diagnostico_imc %}
+        {% if imc %}
+          <li class="cuadro-{{ imc.color }}">
+            <span><strong>{{ imc.fecha }}</strong></span><br>
+            <span>{{ imc.clasificacion }}</span>
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+
+    {% if ultimo_imc %}
+      <h3>Ultimo IMC</h3>
+      <ul class="diagnostico-lista">
+        <li class="cuadro-{{ ultimo_imc.color }}">
+          <span><strong>{{  ultimo_imc.fecha }}</strong></span><br>
+          <span>{{ ultimo_imc.clasificacion }}</span>
+        </li>
+      </ul>
+    {% endif %}
+  </div>
+
+</div>

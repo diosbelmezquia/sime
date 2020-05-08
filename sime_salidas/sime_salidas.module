@@ -1,0 +1,309 @@
+<?php
+
+use Drupal\node\Entity\Node;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+
+function sime_salidas_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  if (preg_match('/^sime_salidas_cuadro_anual_(na|no)/', $route_name)) {
+    $form['field_listado_cpis']['#multiple'] = FALSE;
+    $form['field_listado_cpis']['#description'] = 'Seleccione un CPI';
+  }
+
+  //Cambiar motivo de intervencion a select en salidas.
+  if(isset($form['field_motivo_intervencion_casos'])) {
+    $form['field_motivo_intervencion_casos'] = [
+      "#type" => "select",
+      "#options" => [
+        '' => "Todos los motivos",
+        'maltrato' => "Maltrato",
+        'asi' => "ASI",
+        'negligencia' => "Negligencia",
+        'otro:' => "Otro",
+      ],
+      '#default_value' => '',
+    ];
+  }
+
+  //Ajustes vista personal.
+  if($route_name == 'view.personal.view_personal') {
+    $form['field_p_cargo_funcion_value']['#size'] = 15;
+  }
+
+  //Ajustes vista principal de ninos.
+  if (preg_match('/^views-exposed-form-ninos-page-1/', $form['#id'])) {
+    $form['field_numero_dni_value']['#size'] = 10;
+    $form['field_nombres_value']['#size'] = $form['field_apellidos_value']['#size'] = 15;
+    $form['field_inscripto_value']['#options'][1] = 'Si';
+    $form['field_inscripto_value']['#options'][0] = 'No';
+    $form['field_sin_dni_value']['#options'][1] = 'Si';
+    $form['field_sin_dni_value']['#options'][0] = 'No';
+  }
+
+  if ('form_cpis_sime_salidas_cuadro_anual_na' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\CuadroAnualNaController::sime_salidas_cuadro_anual_na_form_submit';
+  }
+  if ('form_cpis_sime_salidas_desarrollo_infantil.admin' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\DesarrolloInfantilController::sime_salidas_desarrollo_form_submit';
+  }
+  if ('form_cpis_sime_salidas_cuadro_anual_no' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\CuadroAnualNoController::sime_salidas_cuadro_anual_no_form_submit';
+  }
+  if ('form_cpis_sime_salidas.ausentismo' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\PorcientoAusentismoController::sime_salidas_ausentismo_form_submit';
+  }
+  if ('form_cpis_sime_semestral_uno' == $form_id || 'form_cpis_sime_semestral_dos' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\SemestralController::sime_salidas_semestral_form_submit';
+  }
+  if ('sime_salidas_resumen_form' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\CuadroResumenController::sime_salidas_resumen_form_submit';
+  }
+  if ('form_cpis_sime_salidas_ninos_salas' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\NinosSalasController::sime_salidas_ninos_salas_form_submit';
+  }
+  if ('form_cpis_sime_salidas_porciento_casos_tipo' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\CasosTipoController::sime_salidas_porciento_casos_tipo_form_submit';
+  }
+  if ('form_cpis_sime_salidas_diagnostico_tiempo' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\DiagnosticoTiempoController::sime_salidas_diagnostico_tiempo_form_submit';
+  }
+  if ('form_cpis_sime_salidas_diagnositco_gestacional' == $form_id) {
+    $form['#submit'][] = 'Drupal\sime_salidas\Controller\DiagnositcoGestacionalController::sime_salidas_diagnositco_gestacional_form_submit';
+  }
+}
+/**
+ * Implements hook_theme().
+ */
+function sime_salidas_theme() {
+  $theme = [];
+  $theme['sime_salidas_inscriptos'] = [
+    'variables' => [
+      'canvas_id' => [],
+    ],
+  ];
+  $theme['sime_salidas_porciento_cpis'] = [
+    'variables' => [
+      'cant_ausentes' => [],
+      'ninos_por_salas' => '',
+      'ninos_por_salas_hombre' => '',
+      'ninos_por_salas_mujer' => '',
+    ],
+    'template' => 'sime-salidas-porciento-cpis',
+  ];
+  $theme['sime_salidas_porciento_casos_tipo'] = [
+    'variables' => [
+      'porciento_casos_tipo' => '',
+    ],
+    'template' => 'sime-salidas-porciento-casos-tipo',
+  ];
+  $theme['block_node_nino'] = [
+    'variables' => [
+      'diagnostico_talla' => '',
+      'diagnostico_peso' => '',
+      'diagnostico_imc' => '',
+      'ultima_talla' => '',
+      'ultimo_peso' => '',
+      'ultimo_imc' => '',
+      'acta' => '',
+    ],
+    'template' => 'sime-salidas-block-node-nino',
+  ];
+  return $theme;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter().
+ */
+function sime_salidas_node_view_alter(array &$build, Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display) {
+
+  $node_view = ['ct_cuestionario_inscripcion', 'datos_antropometricos', 'inscripcion'];
+  if (in_array($entity->bundle(), $node_view)) {
+    $response = new RedirectResponse(\Drupal::url('entity.node.edit_form', ['node' => $entity->id()]));
+    $response->send();
+  }
+
+  if($build['#view_mode'] == 'full' && $entity->bundle() == 'nino') {
+
+    $datos_personales = $entity->field_datos_personales->referencedEntities()[0];
+    if ($datos_personales->field_sin_dni->value) {
+      unset($build['field_datos_personales'][0]['#paragraph']->field_numero_dni);
+    }
+    else {
+      unset($build['field_datos_personales'][0]['#paragraph']->field_tipo_documento,
+            $build['field_datos_personales'][0]['#paragraph']->field_documento_id,
+            $build['field_datos_personales'][0]['#paragraph']->field_sin_dni);
+    }
+
+    $mediciones = sime_salidas_get_mediciones($entity);
+
+    $build['resumen_casos'] = views_embed_view('recordatorios_casos', 'block_resumen_casos');
+    $build['resumen_casos']['#weight'] = 21;
+
+    $build['desarrollo_infantil'] = views_embed_view('desarrollo_infantil', 'block_desarrollo_infantil');
+    $build['desarrollo_infantil']['#weight'] = $build['resumen_casos']['#weight'] + 1;
+
+
+    if (empty($mediciones)) {
+      return;
+    }
+    if (count($mediciones) > 1) {
+      $ultima_medicion = array_pop($mediciones);
+    }
+    else {
+      $ultima_medicion = reset($mediciones);
+    }
+
+    foreach ($mediciones as $medicion) {
+      $fecha_medicion = $medicion->field_fecha->value;
+      $talla_edad = $medicion->field_t_e->value;
+      $peso_edad = $medicion->field_p_e->value;
+      $imc_edad = $medicion->field_imc_e->value;
+
+      $diagnostico_talla[] = sime_salidas_diagnostico_talla($talla_edad, $fecha_medicion);
+      $diagnostico_peso[] = sime_salidas_diagnostico($peso_edad, $fecha_medicion);
+      $diagnostico_imc[] = sime_salidas_diagnostico($imc_edad, $fecha_medicion);
+    }
+
+    $ultima_talla = sime_salidas_ultimo_diagnostico($ultima_medicion, 'talla');
+    $ultimo_peso = sime_salidas_ultimo_diagnostico($ultima_medicion, 'peso');
+    $ultimo_imc = sime_salidas_ultimo_diagnostico($ultima_medicion, 'imc');
+
+    $access_acta = \Drupal::currentUser()->hasPermission('admin nino acta') && isset($entity->field_diagnostico->value) && $entity->field_diagnostico->value != 'normal' && $entity->field_diagnostico->value != 'sobrepeso';
+
+    $diagnostico_nino = [
+      '#type' => 'html_tag',
+      '#access' => $access_acta,
+      '#tag' => 'h3',
+      '#value' => $entity->field_diagnostico->value ? $entity->field_diagnostico->getFieldDefinition()->getFieldStorageDefinition()
+        ->getOptionsProvider('value', $entity)->getPossibleOptions()[$entity->field_diagnostico->value] : NULL,
+    ];
+
+    $acta_button = [
+      '#type' => 'html_tag',
+      '#access' => $access_acta,
+      '#tag' => 'a',
+      '#value' => 'Ver Acta',
+      '#attributes' => [
+        'class' => [
+          'ver-acta', 'button button--primary'
+        ],
+        'href' => \Drupal::url('sime_salidas_acta', ['node' => $entity->id()]),
+        'target' => '_blank',
+      ],
+      '#weight' => 0
+    ];
+
+    $build['block_node_view_nino'] = [
+      '#cache' => [
+        'max-age' => 0,
+        ],
+      '#diagnostico_talla' => $diagnostico_talla,
+      '#diagnostico_peso' => $diagnostico_peso,
+      '#diagnostico_imc' => $diagnostico_imc,
+      '#ultima_talla' => $ultima_talla,
+      '#ultimo_peso' => $ultimo_peso,
+      '#ultimo_imc' => $ultimo_imc,
+      '#acta' => [$diagnostico_nino, $acta_button],
+      '#theme' => 'block_node_nino',
+      '#weight' => 20,
+    ];
+  }
+}
+
+
+// Obtener mediciones de un nino.
+function sime_salidas_get_mediciones($node_nino) {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'datos_antropometricos');
+  $query->condition('status', 1);
+  $query->condition('field_nino.entity.nid', $node_nino->id());
+  $array_node_id = $query->execute();
+  if (empty($array_node_id)) {
+    return [];
+  }
+  $node_da = Node::load(reset($array_node_id));
+  $mediciones = $node_da->field_datos_antropometricos->referencedEntities();
+
+  //ordenar por fecha.
+  if (!empty($mediciones)) {
+    $fecha = [];
+    foreach ($mediciones as $medicion) {
+      $fecha[$medicion->field_fecha->value] = $medicion;
+    }
+    ksort($fecha);
+    $mediciones = $fecha;
+  }
+  return $mediciones;
+}
+
+// Saber diagnostico de un nino para la talla.
+function sime_salidas_diagnostico_talla($percentilo, $fecha_medicion) {
+  if (!$percentilo) {
+    return NULL;
+  }
+  $fecha_medicion = format_date(strtotime($fecha_medicion), '', 'm/Y');
+  $diagnostico_talla = [
+    'color' => 'rojo',
+    'fecha' => $fecha_medicion,
+    'clasificacion' => 'Normal c/baja talla'
+  ];
+
+  if ($percentilo >= 3) {
+    $diagnostico_talla['color'] = 'verde';
+    $diagnostico_talla['clasificacion'] = 'Normal';
+  }
+
+  return $diagnostico_talla;
+}
+
+// Saber diagnostico de un nino para el peso y el IMC.
+function sime_salidas_diagnostico($percentilo, $fecha_medicion) {
+  if (!$percentilo) {
+    return NULL;
+  }
+  $fecha_medicion = format_date(strtotime($fecha_medicion), '', 'm/Y');
+  $diagnostico = [
+    'color' => 'rojo',
+    'fecha' => $fecha_medicion,
+    'clasificacion' => 'bajo peso'
+  ];
+  if ($percentilo < 3) {
+    return $diagnostico;
+  }
+  elseif ($percentilo >= 3 && $percentilo < 10) {
+    $diagnostico['color'] = 'amarillo';
+    $diagnostico['clasificacion'] = 'Riesgo de bajo peso';
+  }
+  elseif ($percentilo >= 10 && $percentilo < 85) {
+    $diagnostico['color'] = 'verde';
+    $diagnostico['clasificacion'] = 'Normal';
+  }
+  elseif ($percentilo >= 85 && $percentilo < 97) {
+    $diagnostico['color'] = 'amarillo';
+    $diagnostico['clasificacion'] = 'Sobrepeso';
+  }
+  elseif ($percentilo >= 97) {
+    $diagnostico['clasificacion'] = 'Obesidad';
+  }
+  return $diagnostico;
+}
+
+// Saber ultimo diagnostico.
+function sime_salidas_ultimo_diagnostico($ultima_medicion, $tipo_percentilo) {
+  $diagnostico = [];
+  $fecha_medicion = $ultima_medicion->field_fecha->value;
+  if ($tipo_percentilo == 'peso') {
+    $peso_edad = $ultima_medicion->field_p_e->value;
+    $diagnostico = sime_salidas_diagnostico($peso_edad, $fecha_medicion);
+  }
+  elseif ($tipo_percentilo == 'imc') {
+    $imc_edad = $ultima_medicion->field_imc_e->value;
+    $diagnostico = sime_salidas_diagnostico($imc_edad, $fecha_medicion);
+  }
+  else {
+    $talla_edad = $ultima_medicion->field_t_e->value;
+    $diagnostico = sime_salidas_diagnostico_talla($talla_edad, $fecha_medicion);
+  }
+  return $diagnostico;
+}

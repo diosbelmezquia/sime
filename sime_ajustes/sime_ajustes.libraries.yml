@@ -1,0 +1,34 @@
+admin:
+  js:
+    js/admin.js: {}
+  css:
+    theme:
+      css/admin.css: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/jquery.once
+
+admin.restricted:
+  css:
+    theme:
+      css/admin.restricted.css: {}
+  dependencies:
+    - sime_ajustes/admin
+
+chosen:
+  js:
+    js/chosen.js: {}
+
+transliteration:
+  remote: https://github.com/andyhu/transliteration
+  version: 1.6.2
+  license:
+    name: MIT
+    url: https://github.com/andyhu/transliteration/blob/master/LICENSE.txt
+    gpl-compatible: true
+  js:
+    https://unpkg.com/transliteration@1.6.2/lib/browser/transliteration.min.js: { type: external, minified: true }
+  dependencies:
+    - chosen_lib/chosen
+

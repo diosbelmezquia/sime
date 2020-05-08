@@ -1,0 +1,5 @@
+name: 'SIME - Formularios de Desarrollo'
+type: module
+description: Formularios de Desarrollo.
+package: SIME
+core: '8.x'

@@ -1,0 +1,131 @@
+@import "paragraphs";
+
+// Paragraphs Datos personales
+@include paragraphs_documento();
+@include paragraphs_datos_personales();
+@include paragraphs_direccion();
+
+.tabledrag-toggle-weight-wrapper {
+  display: none !important;
+}
+
+// Ocultar icono de Drag en los form.
+.field-multiple-drag { display: none; }
+
+// Ocultar las descipciones de campos como, imagen, file, etc.
+.field--type-image, .field--type-file {
+    .description { display: none; }
+}
+
+.home-toolbar-tab {
+  display: none !important;
+}
+
+.field--name-status {
+  display: none;
+}
+
+fieldset.referente-asociacion-civil { clear: both; }
+/*
+ * Targetting layout
+ */
+.layout-region-node-main, .layout-region-node-footer {
+  float: none !important;
+  width: 100% !important;
+}
+
+.layout-region-node-secondary {
+  display: none;
+}
+
+table.field-multiple-table  .paragraph-type-top { float: right; }
+
+// Formulario CPI
+.formulario-cpi {
+    .field--name-field-nombre-directora,
+    .field--name-field-telefono,
+    .field--name-field-correo-electronico {
+        float: left;
+        width: 30%;
+        margin-right: $input_margin_right;
+    }
+    .field--name-field-telefono { width: 15%; }
+    .field--name-field-asociacion-civil { float: left; }
+
+    fieldset {
+        .field--name-field-ano-firma,
+        .field--name-field-fin-convenio {
+          float: left;
+          margin-right: $input_margin_right;
+          width: 15%;
+        }
+    }
+    @include paragraphs_datos_director();
+}
+
+// Formulario Personal
+.formulario-personal {
+    .field--name-field-pe-funcion,
+    .field--name-field-pe-forma-contratacion {
+        float: left;
+        margin-right: $input_margin_right;
+    }
+    .field--name-field-pe-forma-contratacion .form-type-radio {
+        float: left;
+        margin-right: $input_margin_right;
+    }
+    .field--name-field-pe-capacitaciones,
+    .field--name-field-pe-observaciones {
+        float: left;
+        width: 100%;
+    }
+    @include paragraphs_motivo_faltar();
+}
+
+// Formulario Rendicion
+form.node-rendicion-form {
+    details#edit-group-resumen-general {
+        .details-wrapper {
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+                label { padding-left: 6%; }
+            }
+            .field--name-field-re-saldo-periodo {
+                float: none;
+                label { padding-left: 1%; }
+            }
+            > fieldset {
+                    clear: both;
+                    display: block;
+                .fieldset-wrapper > div {
+                    float: left;
+                    margin-right: $input_margin_right;
+                    width: 20%;
+                    label { padding-left: 6%; }
+                }
+            }
+        }
+    }
+    .field-group-html-element {
+        @include paragraphs_relacion_dependencia();
+        @include paragraphs_personal_monotributo();
+        @include paragraphs_gastos();
+    }
+}
+
+// Formulario Niño:Casos
+.node-casos-form { @include paragraphs_casos(); }
+
+// Estilos radios form nutricion - paragraph.
+.documentacion-nutricion {
+    > div {
+        float: left;
+        width: 30%;
+        margin-right: $input_margin_right;
+    }
+  .field--name-field-fecha-vencimiento {
+    width: 15%;
+    margin-right: 0px;
+  }
+}

@@ -1,0 +1,27 @@
+admin cpi:
+  title: 'Administer CPIs'
+admin personal:
+  title: 'Administrar Personal'
+admin supervisiones:
+  title: 'Administrar Supervisiones'
+admin supervisiones nutricion:
+  title: 'Administrar Supervisiones Nutrición'
+admin planificaciones:
+  title: 'Administrar Planificaciones'
+admin ninos:
+  title: 'Administrar Niños'
+admin casos:
+  title: 'Administrar Casos'
+notificacion casos:
+  title: 'Recibe notificación de casos'
+bypass cpi access:
+  title: 'Eludir control de acceso por CPI'
+ver campos internos:
+  title: 'Ver los campos internos'
+  description: 'Estos campos estan hechos para optimizar las salidas y sus valores se completan a partir de diferentes entradas.'
+altas bajas ninos:
+  title: 'Recibir alertas de altas y bajas de niños'
+  description: 'Recibe notificación a su correo registrado con altas y bajas de inscripción.'
+campos ausentismo nino:
+  title: 'Editar campos de inasistencia en niños'
+  description: 'Permite modificar los campos de las inasistencias seguidas en un niño.'

@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function permissions_listjs_form_user_admin_permissions_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $form['permissions_listjs'] = [
+    '#type' => 'container',
+    '#attributes' => [
+      'class' => ['js-show'],
+    ],
+    '#weight' => -1000,
+  ];
+  $form['permissions_listjs']['text'] = [
+    '#type' => 'search',
+    '#title' => t('Filter permissions'),
+    '#title_display' => 'invisible',
+    '#size' => 50,
+    '#placeholder' => t('Filter by permission'),
+    '#attributes' => [
+      'class' => ['permissions-listjs', 'permissions-listjs-fuzzy-search'],
+      'data-table' => '#permissions',
+      'autocomplete' => 'off',
+    ],
+  ];
+  $form['#attached']['library'][] = 'permissions_listjs/permissions';
+}

@@ -1,0 +1,139 @@
+sime_salidas.admin:
+  route_name: sime_salidas.admin
+  parent: system.admin
+  description: 'Administer salidas.'
+  title: 'SALIDAS'
+  weight: -99
+
+salidas_nutricion.admin:
+  route_name: sime_salidas_nutricion.admin
+  parent: sime_salidas.admin
+  description: ''
+  title: 'Nutrición'
+  weight: 5
+
+salidas_supervision.admin:
+  route_name: sime_salidas_cuadro_anual.admin
+  parent: sime_salidas.admin
+  description: ''
+  title: 'Supervisión'
+  weight: 10
+
+salidas_casos.admin:
+  route_name: sime_salidas_casos.admin
+  parent: sime_salidas.admin
+  description: ''
+  title: 'Casos'
+  weight: 15
+
+salidas_ninos.admin:
+  route_name: sime_salidas_ninos.admin
+  parent: sime_salidas.admin
+  description: ''
+  title: 'Niños'
+  weight: 20
+
+sime_desarrollo_infantil.admin:
+  route_name: sime_salidas_desarrollo_infantil.admin
+  parent: sime_salidas.admin
+  description: ''
+  title: 'Desarrollo infantil'
+  weight: 25
+
+salidas_ninos_sala.admin:
+  route_name: sime_salidas_ninos_salas
+  parent: salidas_ninos.admin
+  description: ''
+  title: 'Niños por sala'
+  weight: 0
+
+salidas_ninos_ausentismo.admin:
+  route_name: sime_salidas.ausentismo
+  parent: salidas_ninos.admin
+  description: ''
+  title: 'Porciento de ausentismo'
+  weight: 5
+
+salidas_semestral1.admin:
+  route_name: sime_semestral_uno
+  parent: salidas_nutricion.admin
+  description: ''
+  title: 'Semestral 1'
+  weight: 0
+
+salidas_semestral2.admin:
+  route_name: sime_semestral_dos
+  parent: salidas_nutricion.admin
+  description: ''
+  title: 'Semestral 2'
+  weight: 1
+
+salidas_diagnositco.admin:
+  route_name: view.ninos.page_nino_diagnostico
+  parent: salidas_nutricion.admin
+  description: ''
+  title: 'Niños por Diagnósitco'
+  weight: 2
+
+salidas_listado_recordatorios.admin:
+  route_name: view.recordatorios_casos.page_recordatorios_casos
+  parent: salidas_casos.admin
+  description: ''
+  title: 'Listado de recordatorios'
+  weight: 0
+
+salidas_listado_casos.admin:
+  route_name: view.recordatorios_casos.page_listado_casos
+  parent: salidas_casos.admin
+  description: ''
+  title: 'Listado de casos'
+  weight: 0
+
+salidas_cuadro_anual_na.admin:
+  route_name: sime_salidas_cuadro_anual_na
+  parent: salidas_supervision.admin
+  description: ''
+  title: 'Cuadro anual de No observados'
+  weight: 0
+
+salidas_cuadro_anual_no.admin:
+  route_name: sime_salidas_cuadro_anual_no
+  parent: salidas_supervision.admin
+  description: ''
+  title: 'Cuadro anual de observaciones negativas'
+  weight: 1
+
+salidas_observaciones_negativas.admin:
+  route_name: sime_salidas_observaciones_negativas
+  parent: salidas_supervision.admin
+  description: ''
+  title: 'Últimas observaciones negativas'
+  weight: 2
+
+salidas_cuadro_resumen.admin:
+  route_name: sime_salidas_cuadro_resumen
+  parent: salidas_casos.admin
+  description: ''
+  title: 'Cuadro resumen'
+  weight: 0
+
+salidas_casos_tipo.admin:
+  route_name: sime_salidas_porciento_casos_tipo
+  parent: salidas_casos.admin
+  description: ''
+  title: 'Por tipo'
+  weight: 0
+
+salidas_diagnostico_tiempo.admin:
+  route_name: sime_salidas_diagnostico_tiempo
+  parent: salidas_nutricion.admin
+  description: ''
+  title: 'Diagnóstico / Tiempo transcurrido'
+  weight: 5
+
+salidas_diagnositco_gestacional.admin:
+  route_name: sime_salidas_diagnositco_gestacional
+  parent: salidas_nutricion.admin
+  description: ''
+  title: 'Diagnóstico / Edad gestacional'
+  weight: 10

@@ -1,0 +1,68 @@
+access salidas inscriptos:
+  title: 'Acceder a los indicadores de inscripción'
+admin listado casos:
+  title: 'Ver listado de casos'
+admin cuadro anual na:
+  title: 'Cuadro anual de No observados'
+admin cuadro anual no:
+  title: 'Cuadro anual de observaciones negativas'
+admin cuadro resumen:
+  title: 'Ver cuadro resumen'
+admin ninos salas:
+  title: 'Ver gráfica de niños por sala'
+admin observaciones negativas:
+  title: 'Ver observaciones negativas'
+admin casos tipo:
+  title: 'Ver porciento de casos por tipo'
+admin menu salidas:
+  title: 'Ver menú principal de salidas'
+admin menu salidas nutricion:
+  title: 'Ver menú de salidas(Nutrición)'
+admin menu salidas casos:
+  title: 'Ver menú de salidas(Casos)'
+admin menu salidas ninos:
+  title: 'Ver menú de salidas(Niños)'
+admin menu salidas desarrollo:
+  title: 'Ver menú de salidas(Desarrollo infantil)'
+admin menu salidas supervision:
+  title: 'Ver menú de salidas(Supervisión)'
+admin recordatorios casos:
+  title: 'Ver recordatorios de casos'
+admin nino diagnostico:
+  title: 'Ver niños por diagnóstico'
+admin cuadro semestral:
+  title: 'Ver cuadro semestral'
+admin nino acta:
+  title: 'Ver acta'
+admin salida recuadros:
+  title: 'Ver recuadros de nutrición'
+admin salida desarrollo:
+  title: 'Ver resultado de desarrollo infantil'
+admin ver todos cpis:
+  title: 'Ver todos los CPIs'
+admin ver todos ninos:
+  title: 'Ver todos los Niños'
+admin ver todos inasistencias:
+  title: 'Ver todas las Inasistencias'
+admin ver todos inscripciones:
+  title: 'Ver todas las Inscripciones(Para Inasistencias)'
+admin salidas ausentismo:
+  title: 'Ver niños con porciento de ausentismo'
+admin ver todas nutriciones:
+  title: 'Ver todas las supervisiones de nutrición'
+admin ver todas supervisiones:
+  title: 'Ver todas las supervisiones frecuentes y anuales'
+admin ver todas planificacion:
+  title: 'Ver todas las planificaciones'
+admin ver todo personal:
+  title: 'Ver todo el personal'
+admin ver todo desarrollo infantil:
+  title: 'Ver todo desarollo infantil'
+ver bloque casos node nino:
+  title: 'Ver bloque de casos en node view del niño'
+ver bloque desarrollo node nino:
+  title: 'Ver bloque de desarollo infantil en node view del niño'
+ver listado ninos rezago:
+  title: 'Ver niños con rezago'
+admin salida desarrollo mediciones:
+  title: 'Ver mediciones de niños con rezago'

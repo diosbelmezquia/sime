@@ -1,0 +1,503 @@
+<?php
+
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Render\Element;
+use Drupal\field\Entity\FieldStorageConfig;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\user\Entity\User;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\node\NodeInterface;
+use Drupal\node\Entity\Node;
+
+
+function sime_formularios_desarrollo_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+
+  $formulario1 = sime_formularios_get_formularios('formulario1');
+  $formulario2 = sime_formularios_get_formularios('formulario2');
+  $formulario3 = sime_formularios_get_formularios('formulario3');
+  $formulario4 = sime_formularios_get_formularios('formulario4');
+  $formulario5 = sime_formularios_get_formularios('formulario5');
+
+  if (preg_match('/^node_desarrollo_1(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_desarrollo_resultado']['#access'] = FALSE;
+    foreach ($formulario1 as $pregunta) {
+      if (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se']['widget']['#options']['_none']);
+      }
+    }
+    $form['#validate'][] = 'sime_formularios_validate_form_desarrollo1';
+  }
+
+  if (preg_match('/^node_desarrollo_2(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_desarrollo_resultado']['#access'] = FALSE;
+    foreach ($formulario2 as $pregunta) {
+      if (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se']['widget']['#options']['_none']);
+      }
+    }
+    $form['#validate'][] = 'sime_formularios_validate_form_desarrollo2';
+  }
+
+  if (preg_match('/^node_desarrollo_3(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_desarrollo_resultado']['#access'] = FALSE;
+    foreach ($formulario3 as $pregunta) {
+      if (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se']['widget']['#options']['_none']);
+      }
+    }
+    $form['#validate'][] = 'sime_formularios_validate_form_desarrollo3';
+  }
+
+  if (preg_match('/^node_desarrollo_4(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_desarrollo_resultado']['#access'] = FALSE;
+    foreach ($formulario4 as $pregunta) {
+      if (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se']['widget']['#options']['_none']);
+      }
+      elseif (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_colabora'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_colabora']['widget']['#options']['_none']);
+      }
+    }
+    $form['#validate'][] = 'sime_formularios_validate_form_desarrollo4';
+  }
+
+  if (preg_match('/^node_desarrollo_5(_form|_edit_form)/', $form["#form_id"])) {
+    $form['field_desarrollo_resultado']['#access'] = FALSE;
+    foreach ($formulario5 as $pregunta) {
+      if (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_se']['widget']['#options']['_none']);
+      }
+      elseif (!empty($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_colabora'])) {
+        unset($form[$pregunta['pregunta']]['widget'][0]['subform']['field_no_colabora']['widget']['#options']['_none']);
+      }
+    }
+    $form['#validate'][] = 'sime_formularios_validate_form_desarrollo5';
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function sime_formularios_desarrollo_entity_insert(Drupal\Core\Entity\EntityInterface $entity) {
+  $formularios = ['desarrollo_1', 'desarrollo_2', 'desarrollo_3', 'desarrollo_4', 'desarrollo_5'];
+  $is_form = in_array($entity->bundle(), $formularios);
+
+  if ($entity->getEntityTypeId() == 'node' && $is_form) {
+    $rezago = sime_formularios_desarrollo_nino_rezago($entity) ? 'si' : 'no';
+    $entity->field_desarrollo_resultado->value = $rezago;
+    $entity->sime_formularios_insert = TRUE;
+    $entity->setNewRevision();
+    $entity->setRevisionLogMessage('Cálculo de resultado.');
+    $entity->save();
+    if ($entity->field_nino) {
+      $nino = $entity->field_nino->entity;
+      $anno_medicion = NULL;
+      if ($nino->get('field_anno_mediciones')->getValue()) {
+        $fecha_medicion = $nino->get('field_anno_mediciones')->getValue()[0]['value'];
+        if (isset($fecha_medicion)) {
+          $anno_medicion = format_date(strtotime($fecha_medicion), '', 'Y');
+        }
+      }
+      if (!$anno_medicion || $anno_medicion != date('Y')) {
+        //1ra medicion del año.
+        $nino->field_ultima_medicion->value = 'no_realizada';
+        $nino->field_anno_mediciones->value = date(DATETIME_DATE_STORAGE_FORMAT);
+        $nino->field_cambio_rezago->value = '_none';
+        if ($rezago == 'si') {
+          $nino->field_con_rezago->value = TRUE;
+          $nino->field_primera_medicion->value = 'con_rezago';
+        }
+        else {
+          $nino->field_con_rezago->value = FALSE;
+          $nino->field_primera_medicion->value = 'sin_rezago';
+        }
+      }
+      else {
+        //Ultima medicion del año.
+        if ($rezago == 'si') {
+          $nino->field_con_rezago->value = TRUE;
+          $nino->field_ultima_medicion->value = 'con_rezago';
+        }
+        else {
+          $nino->field_con_rezago->value = FALSE;
+          $nino->field_ultima_medicion->value = 'sin_rezago';
+        }
+        $primera_medicion = $nino->field_primera_medicion->value;
+        $ultima_medicion = $nino->field_ultima_medicion->value;
+        //Niños que se mantienen sin rezago.
+        if ($primera_medicion == 'sin_rezago' && $ultima_medicion == 'sin_rezago') {
+          $nino->field_cambio_rezago->value = 'sin_rezago';
+        }
+        //Niños que superaron el rezago.
+        elseif ($primera_medicion == 'con_rezago' && $ultima_medicion == 'sin_rezago') {
+          $nino->field_cambio_rezago->value = 'superaron_rezago';
+        }
+        //Niños que se mantienen con rezago.
+        elseif ($primera_medicion == 'con_rezago' && $ultima_medicion == 'con_rezago') {
+          $nino->field_cambio_rezago->value = 'mantienen_rezago';
+        }
+        //Niños que no estaban y ahora están con rezago.
+        elseif ($primera_medicion == 'sin_rezago' && $ultima_medicion == 'con_rezago') {
+          $nino->field_cambio_rezago->value = 'ahora_rezago';
+        }
+      }
+      $nino->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function sime_formularios_desarrollo_entity_update(Drupal\Core\Entity\EntityInterface $entity) {
+  $formularios = ['desarrollo_1', 'desarrollo_2', 'desarrollo_3', 'desarrollo_4', 'desarrollo_5'];
+  $is_form = in_array($entity->bundle(), $formularios);
+  if ($entity->getEntityTypeId() == 'node' && $is_form) {
+    if (!$entity->sime_formularios_insert) {
+      sime_formularios_desarrollo_entity_insert($entity);
+    }
+  }
+}
+
+function sime_formularios_desarrollo_nino_rezago(&$entity) {
+  $cant = 0;
+  $nino_edad_meses = [];
+
+  // Saber edad del nino/a.
+  if (!$entity->field_nino->isEmpty()) {
+    $nino = $entity->field_nino->entity;
+    $datos_personales = $nino->field_datos_personales->entity;
+    $fecha = $datos_personales->field_fecha_de_nacimiento->value;
+    $nino_edad_meses = sime_formularios_desarrollo_calcular_edad($fecha);
+  }
+
+  $formulario1 = sime_formularios_get_formularios('formulario1');
+  $formulario2 = sime_formularios_get_formularios('formulario2');
+  $formulario3 = sime_formularios_get_formularios('formulario3');
+  $formulario4 = sime_formularios_get_formularios('formulario4');
+  $formulario5 = sime_formularios_get_formularios('formulario5');
+
+  switch ($entity->bundle()) {
+    case 'desarrollo_1':
+      if (!empty($nino_edad_meses)) {
+        $cant = sime_formularios_desarrollo_validar($formulario1, $nino_edad_meses, $entity);
+      }
+    break;
+    case 'desarrollo_2':
+      if (!empty($nino_edad_meses)) {
+        $cant = sime_formularios_desarrollo_validar($formulario2, $nino_edad_meses, $entity);
+      }
+    break;
+    case 'desarrollo_3':
+      if (!empty($nino_edad_meses)) {
+        $cant = sime_formularios_desarrollo_validar($formulario3, $nino_edad_meses, $entity);
+      }
+    break;
+    case 'desarrollo_4':
+      if (!empty($nino_edad_meses)) {
+        foreach ($formulario4 as $pregunta) {
+          if ($cant >= 1) {
+            break;
+          }
+          if (($nino_edad_meses['meses_full'] >= $pregunta['meses']) &&
+           ($nino_edad_meses['dias'] >= $pregunta['dias'])) {
+            $field = $entity->get($pregunta['pregunta'])->entity;
+            $value = 'si';
+            if ($field->field_no_se) {
+              $value = $field->field_no_se->value;
+            }
+            elseif ($field->field_no_colabora){
+              $value = $field->field_no_colabora->value;
+            }
+            if ($value != 'si') {
+              $cant++;
+            }
+          }
+        }
+      }
+    return ($cant >= 1);
+    case 'desarrollo_5':
+      if (!empty($nino_edad_meses)) {
+        $cant = sime_formularios_desarrollo_validar($formulario5, $nino_edad_meses, $entity);
+      }
+    break;
+  }
+  return ($cant >= 2);
+}
+
+//
+function sime_formularios_desarrollo_validar($formulario, $nino_edad_meses, Drupal\Core\Entity\EntityInterface &$entity) {
+  $cant = 0;
+  foreach ($formulario as $pregunta) {
+    if ($cant >= 2) {
+      return $cant;
+    }
+    if (($nino_edad_meses['meses_full'] >= $pregunta['meses']) &&
+     ($nino_edad_meses['dias'] >= $pregunta['dias'])) {
+      $field = $entity->get($pregunta['pregunta'])->entity;
+      $value = 'si';
+      if ($field->field_no_se) {
+        $value = $field->field_no_se->value;
+      }
+      if ($value != 'si') {
+        $cant++;
+      }
+    }
+  }
+  return $cant;
+}
+
+// Calcular edad en meses/dias.
+function sime_formularios_desarrollo_calcular_edad($fecha_nacimiento) {
+  if (!isset($fecha_nacimiento)) {
+    return $edad = [];
+  }
+  $fecha_nac = new DateTime(date('Y/m/d',strtotime($fecha_nacimiento)));
+  $fecha_hoy =  new DateTime(date('Y/m/d',time()));
+  $edad = date_diff($fecha_hoy, $fecha_nac);
+  $annos = $edad->format('%y');
+  $meses = $edad->format('%m');
+  $meses_full = $annos >= 1 ? $annos * 12 + $meses : $meses;
+  $edad = [
+    'annos' => $annos,
+    'meses' => $meses,
+    'meses_full' => $meses_full,
+    'dias' => $edad->format('%d')
+  ];
+  return $edad;
+}
+
+// Obtener formularios.
+function sime_formularios_get_formularios($formulario) {
+  switch ($formulario) {
+    case 'formulario1':
+      // Edades para el formulario 1.
+      // Niños y niñas de 6 a 11 meses.
+      $formulario1 = [];
+      $formulario1[1] =  ['pregunta' => 'field_d1_acostado', 'meses' => 5, 'dias' => 23];
+      $formulario1[2] =  ['pregunta' => 'field_d1_llamar_nino','meses' => 5, 'dias' => 26];
+      $formulario1[3] =  ['pregunta' => 'field_d1_sostenerse','meses' => 5, 'dias' => 26];
+      $formulario1[4] =  ['pregunta' => 'field_d1_frente_espejo','meses' => 6, 'dias' => 0];
+      $formulario1[5] =  ['pregunta' => 'field_d1_agarrar_objeto','meses' => 6, 'dias' => 29];
+      $formulario1[6] =  ['pregunta' => 'field_d1_sentarse_solo','meses' => 7, 'dias' => 24];
+      $formulario1[7] =  ['pregunta' => 'field_d1_resiste','meses' => 8, 'dias' => 5];
+      $formulario1[8] =  ['pregunta' => 'field_d1_esconderse','meses' => 8, 'dias' => 5];
+      $formulario1[9] =  ['pregunta' => 'field_d1_dadada','meses' => 8, 'dias' => 12];
+      $formulario1[10] = ['pregunta' => 'field_d1_agarrar_objeto_cerca','meses' => 9, 'dias' => 0];
+      $formulario1[11] = ['pregunta' => 'field_d1_dice_mamama','meses' => 9, 'dias' => 18];
+      $formulario1[12] = ['pregunta' => 'field_d1_entiende_no','meses' => 9, 'dias' => 25];
+      $formulario1[13] = ['pregunta' => 'field_d1_levanta','meses' => 10, 'dias' => 24];
+      $formulario1[14] = ['pregunta' => 'field_d1_puede_pararse','meses' => 11, 'dias' => 12];
+      $formulario1[15] = ['pregunta' => 'field_d1_agarrar_pan','meses' => 11, 'dias' => 23];
+      return $formulario1;
+    case 'formulario2':
+      // Edades para el formulario 2.
+      // Niños y niñas de 12 a 17 meses.
+      $formulario2 = [];
+      $formulario2[1] =  ['pregunta' => 'field_d2_agarrar_objeto_cerca', 'meses' => 7, 'dias' => 13];
+      $formulario2[2] =  ['pregunta' => 'field_d2_dice_mamama', 'meses' => 8, 'dias' => 8];
+      $formulario2[3] =  ['pregunta' => 'field_d2_entiende_no','meses' => 7, 'dias' => 2];
+      $formulario2[4] =  ['pregunta' => 'field_d2_levanta','meses' => 9, 'dias' => 4];
+      $formulario2[5] =  ['pregunta' => 'field_d2_puede_pararse','meses' => 10, 'dias' => 20];
+      $formulario2[6] =  ['pregunta' => 'field_d2_agarra_mueble','meses' => 10, 'dias' => 17];
+      $formulario2[7] =  ['pregunta' => 'field_d2_agarrar_pan','meses' => 10, 'dias' => 13];
+      $formulario2[8] =  ['pregunta' => 'field_d2_camina_mano','meses' => 11, 'dias' => 8];
+      $formulario2[9] =  ['pregunta' => 'field_d2_camina_solo','meses' => 13, 'dias' => 17];
+      $formulario2[10] = ['pregunta' => 'field_d2_recoger_objeto','meses' => 13, 'dias' => 13];
+      $formulario2[11] = ['pregunta' => 'field_d2_come_solo','meses' => 16, 'dias' => 2];
+      $formulario2[12] = ['pregunta' => 'field_d2_pedir_objeto','meses' => 12, 'dias' => 29];
+      $formulario2[13] = ['pregunta' => 'field_d2_introducir_piedrita','meses' => 14, 'dias' => 16];
+      $formulario2[14] = ['pregunta' => 'field_d2_buscar_objeto','meses' => 15, 'dias' => 0];
+      return $formulario2;
+    case 'formulario3':
+      // Edades para el formulario 3.
+      // Niños y niñas de 18 meses a 2 años y 5 meses.
+      $formulario3 = [];
+      $formulario3[1] =  ['pregunta' => 'field_d3_come_solo', 'meses' => 16, 'dias' => 2];
+      $formulario3[2] =  ['pregunta' => 'field_d3_introducir_piedrita', 'meses' => 14, 'dias' => 16];
+      $formulario3[3] =  ['pregunta' => 'field_d3_pedir_objeto','meses' => 12, 'dias' => 29];
+      $formulario3[4] =  ['pregunta' => 'field_d3_buscar_objeto','meses' => 15, 'dias' => 0];
+      $formulario3[5] =  ['pregunta' => 'field_d3_juega_juguetes','meses' => 13, 'dias' => 28];
+      $formulario3[6] =  ['pregunta' => 'field_d3_subir_silla','meses' => 16, 'dias' => 6];
+      $formulario3[7] =  ['pregunta' => 'field_d3_hacer_garabato','meses' => 15, 'dias' => 4];
+      $formulario3[8] =  ['pregunta' => 'field_d3_copia','meses' => 15, 'dias' => 14];
+      $formulario3[9] =  ['pregunta' => 'field_d3_dice_mama_papa','meses' => 16, 'dias' => 10];
+      $formulario3[10] = ['pregunta' => 'field_d3_patear_pelota','meses' => 15, 'dias' => 11];
+      $formulario3[11] = ['pregunta' => 'field_d3_utiliza_palabra','meses' => 16, 'dias' => 28];
+      $formulario3[12] = ['pregunta' => 'field_d3_armar_torre','meses' => 19, 'dias' => 28];
+      $formulario3[13] = ['pregunta' => 'field_d3_responde_llamado','meses' => 18, 'dias' => 29];
+      $formulario3[14] = ['pregunta' => 'field_d3_dice_oraciones','meses' => 25, 'dias' => 28];
+      $formulario3[15] = ['pregunta' => 'field_d3_tirar_pelota','meses' => 22, 'dias' => 6];
+      return $formulario3;
+    case 'formulario4':
+      // Edades para el formulario 4.
+      // Niños y niñas de 2 años y 6 meses a 3 años y 11 meses.
+      $formulario4 = [];
+      $formulario4[1] =  ['pregunta' => 'field_d4_responde_llamado', 'meses' => 28, 'dias' => 6];
+      $formulario4[2] =  ['pregunta' => 'field_d4_dice_oraciones', 'meses' => 28, 'dias' => 28];
+      $formulario4[3] =  ['pregunta' => 'field_d4_tirar_pelota','meses' => 29, 'dias' => 1];
+      $formulario4[4] =  ['pregunta' => 'field_d4_dejar_panales','meses' => 32, 'dias' => 16];
+      $formulario4[5] =  ['pregunta' => 'field_d4_sacarse_prenda','meses' => 33, 'dias' => 22];
+      $formulario4[6] =  ['pregunta' => 'field_d4_puede_saltar','meses' => 34, 'dias' => 2];
+      $formulario4[7] =  ['pregunta' => 'field_d4_puede_cantar','meses' => 33, 'dias' => 29];
+      $formulario4[8] =  ['pregunta' => 'field_d4_ponerse_prenda_ropa','meses' => 36, 'dias' => 4];
+      $formulario4[9] =  ['pregunta' => 'field_d4_dice_otras_oraciones','meses' => 37, 'dias' => 17];
+      $formulario4[10] = ['pregunta' => 'field_d4_dice_su_nombre','meses' => 43, 'dias' => 10];
+      $formulario4[11] = ['pregunta' => 'field_d4_puede_saltar_objeto','meses' => 45, 'dias' => 22];
+      $formulario4[12] = ['pregunta' => 'field_d4_figuras','meses' => 28, 'dias' => 20];
+      $formulario4[13] = ['pregunta' => 'field_d4_pararse_solo_pie','meses' => 45, 'dias' => 18];
+      $formulario4[14] = ['pregunta' => 'field_d4_color_parece','meses' => 45, 'dias' => 18];
+      return $formulario4;
+    case 'formulario5':
+      // Edades para el formulario 5.
+      // Niños y niñas de 4 años a 5 años y 11 meses.
+      $formulario5 = [];
+      $formulario5[1] =  ['pregunta' => 'field_d5_saltar_dos_pies', 'meses' => 36, 'dias' => 11];
+      $formulario5[2] =  ['pregunta' => 'field_d5_indicaciones', 'meses' => 43, 'dias' => 20];
+      $formulario5[3] =  ['pregunta' => 'field_d5_color_parece','meses' => 43, 'dias' => 13];
+      $formulario5[4] =  ['pregunta' => 'field_d5_ordenes','meses' => 41, 'dias' => 8];
+      $formulario5[5] =  ['pregunta' => 'field_d5_cocina_sirve','meses' => 45, 'dias' => 22];
+      $formulario5[6] =  ['pregunta' => 'field_d5_senalar_color','meses' => 52, 'dias' => 28];
+      $formulario5[7] =  ['pregunta' => 'field_d5_dia_noche','meses' => 56, 'dias' => 8];
+      $formulario5[8] =  ['pregunta' => 'field_d5_pararse_solo_pie','meses' => 36, 'dias' => 29];
+      $formulario5[9] =  ['pregunta' => 'field_d5_saltar_varias_veces','meses' => 47, 'dias' => 12];
+      $formulario5[10] = ['pregunta' => 'field_d5_camine','meses' => 52, 'dias' => 10];
+      $formulario5[11] = ['pregunta' => 'field_d5_camine_atras','meses' => 63, 'dias' => 11];
+      $formulario5[12] = ['pregunta' => 'field_d5_figura','meses' => 50, 'dias' => 19];
+      $formulario5[13] = ['pregunta' => 'field_d5_figura_triangulo','meses' => 56, 'dias' => 11];
+      $formulario5[14] = ['pregunta' => 'field_d5_dibujo','meses' => 48, 'dias' => 25];
+      //$formulario5[14] - 6 partes...ver esto
+      //$formulario5[14] = ['pregunta' => 'field_d4_color_parece','meses' => 58, 'dias' => 24];
+      return $formulario5;
+  }
+}
+
+function sime_formularios_validate_form_desarrollo1(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = sime_formularios_get_formularios('formulario1');
+
+  foreach ($fields as $field) {
+    $value = $form_state->getValue($field['pregunta']);
+    $message = 'El Campo '.strtoupper($form[$field['pregunta']]['widget']['#title']). ' es obligatorio';
+    if(is_null($value[0]['subform']['field_no_se'][0]['value'])) {
+      $form_state->setErrorByName($field['pregunta'], $message);
+    }
+  }
+}
+
+function sime_formularios_validate_form_desarrollo2(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = sime_formularios_get_formularios('formulario2');
+
+  foreach ($fields as $field) {
+    $value = $form_state->getValue($field['pregunta']);
+    $message = 'El Campo '.strtoupper($form[$field['pregunta']]['widget']['#title']). ' es obligatorio';
+    if(is_null($value[0]['subform']['field_no_se'][0]['value'])) {
+      $form_state->setErrorByName($field['pregunta'], $message);
+    }
+  }
+}
+
+function sime_formularios_validate_form_desarrollo3(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = sime_formularios_get_formularios('formulario3');
+
+  foreach ($fields as $field) {
+    $value = $form_state->getValue($field['pregunta']);
+    $message = 'El Campo '.strtoupper($form[$field['pregunta']]['widget']['#title']). ' es obligatorio';
+    if(is_null($value[0]['subform']['field_no_se'][0]['value'])) {
+      $form_state->setErrorByName($field['pregunta'], $message);
+    }
+  }
+}
+
+function sime_formularios_validate_form_desarrollo4(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = sime_formularios_get_formularios('formulario4');
+
+  foreach ($fields as $field) {
+    $value = $form_state->getValue($field['pregunta']);
+    $message = 'El Campo '.strtoupper($form[$field['pregunta']]['widget']['#title']). ' es obligatorio';
+    if (preg_match('/field_d4_figuras|field_d4_pararse_solo_pie|field_d4_color_parece/', $form[$field['pregunta']]['#array_parents'][0])) {
+      if(is_null($value[0]['subform']['field_no_colabora'][0]['value'])) {
+        $form_state->setErrorByName($field['pregunta'], $message);
+      }
+    }
+    elseif(is_null($value[0]['subform']['field_no_se'][0]['value'])) {
+      $form_state->setErrorByName($field['pregunta'], $message);
+    }
+  }
+}
+
+function sime_formularios_validate_form_desarrollo5(&$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  $fields = sime_formularios_get_formularios('formulario5');
+
+  foreach ($fields as $field) {
+    $value = $form_state->getValue($field['pregunta']);
+    $message = 'El Campo '.strtoupper($form[$field['pregunta']]['widget']['#title']). ' es obligatorio';
+    if (preg_match('/field_d5_saltar_dos_pies|field_d5_indicaciones|field_d5_cocina_sirve/', $form[$field['pregunta']]['#array_parents'][0])) {
+      if(is_null($value[0]['subform']['field_no_se'][0]['value'])) {
+        $form_state->setErrorByName($field['pregunta'], $message);
+      }
+    }
+    elseif(is_null($value[0]['subform']['field_no_colabora'][0]['value'])) {
+      $form_state->setErrorByName($field['pregunta'], $message);
+    }
+  }
+}
+
+function sime_formularios_desarrollo_preprocess_views_view(&$variables) {
+  $view = $variables['view'];
+  $response = new RedirectResponse(\Drupal::url('view.ninos.page_1'));
+  if ($view->id() == 'desarrollo_infantil' && $view->current_display == 'page_desarrollo_infantil') {
+    $nino_id = \Drupal::request()->query->get('field_nino');
+    $nino = Node::load($nino_id);
+    if(!isset($nino)) {
+      // Volver a la vista nino, porque el nino no existe.
+      $response->send();
+    }
+    // Saber edad del nino.
+    $datos_personales = $nino->field_datos_personales->entity;
+    $fecha = $datos_personales->field_fecha_de_nacimiento->value;
+    $edad = sime_formularios_desarrollo_calcular_edad($fecha);
+    if (!empty($edad)) {
+      $form = "";
+      $url = \Drupal::url('node.add_page');
+      // Niños y niñas de 6 a 11 meses.
+      if ($edad['meses_full'] >= 6 && $edad['meses_full'] <= 11)  {
+        $form = '/desarrollo_1';
+      }
+      // Niños y niñas de 12 a 17 meses.
+      elseif ($edad['meses_full'] >= 12 && $edad['meses_full'] <= 17)  {
+        $form = '/desarrollo_2';
+      }
+      // Niños y niñas de 18 meses a 2 años y 5 meses.
+      elseif ($edad['meses_full'] >= 18 && $edad['meses_full'] <= 29)  {
+        $form = '/desarrollo_3';
+      }
+      // Niños y niñas de 2 años y 6 meses a 3 años y 11 meses.
+      elseif ($edad['meses_full'] >= 30 && $edad['meses_full'] <= 47)  {
+        $form = '/desarrollo_4';
+      }
+      // Niños y niñas de 4 años a 5 años y 11 meses.
+      elseif ($edad['meses_full'] >= 48 && $edad['meses_full'] <= 71)  {
+        $form = '/desarrollo_5';
+      }
+      if (!empty($form)) {
+        $button = "<p><a href='".$url.$form."?field_nino=".$nino_id."' class='button button--primary'>Nuevo formulario</a></p>";
+        // Mostrar boton segun edad.
+        $variables['header']['area']['#text'] = $button;
+      }
+      else {
+        // Volver a la vista nino, porque la edad de nino no esta en el rango establecido.
+        drupal_set_message('La edad de niño no está en el rango establecido', 'error');
+        $response->send();
+        exit;
+      }
+    }
+    else {
+      // Volver a la vista nino, porque no se definio fecha de nacimiento del nino.
+      drupal_set_message('No está definida fecha de nacimiento del niño', 'error');
+      $response->send();
+      exit;
+    }
+  }
+}

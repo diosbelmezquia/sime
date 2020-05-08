@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * Implements hook_entity_insert().
+ */
+function sime_indice_vulnerabilidad_entity_insert(Drupal\Core\Entity\EntityInterface $entity) {
+  // Si no es una entity ni el content type "Cuestionario de inscripcion", no hacer nada"
+  if ($entity->getEntityTypeId() !== 'node' || $entity->bundle() !== 'ct_cuestionario_inscripcion') {
+    return;
+  }
+
+  $indice_vulnerabilidad = 0;
+
+  // Array con los nombres de maquina de los input + su puntage
+  $puntage = [
+    // 1) Organización familiar
+    'of_mp' => 0,
+    'of_m' => 3,
+    'of_p' => 3,
+    'of_otrof_ct' => 3,
+    'of_otrof_st' => 4,
+    'of_sinf' => 5,
+
+    // 2) ¿Alguno de sus padres se encuentra privado de la libertad (en situación penal)?
+    'pl_1' => 3,
+    'pl_0' => 0,
+
+    // 3) Número de hermanos
+    'nh_1' => 1,
+    'nh_2' =>  2,
+    'nh_3-5' => 3,
+    'nh_6-10' => 5,
+    'nh_+10' => 5,
+
+    // 4) Madre adolescente
+    'ma_1' => 5,
+    'ma_0' => 0,
+
+    // 5) ¿Hay alguna mujer embarazada dentro del grupo familiar conviviente?
+    'me_1' => 5,
+    'me_0' => 0,
+
+    // 6) Condiciones de salud dentro del grupo familiar
+    'cs_no' => 0,
+    'cs_cro' => 3,
+    'cs_dcc' => 4,
+    'cs_dsc' => 5,
+
+    // 7) Cobertura de salud de la familia
+    'csf_pri' => 0,
+    'csf_pub_cmr' => 3,
+    'csf_pub_smr' => 4,
+    'csf_no' => 5,
+
+    // 8) Control de salud del niño/a
+    'csn_p' => 0,
+    'csn_1' =>  3,
+    'csn_enf' => 3,
+    'csn_0' =>  3,
+
+    // 9) Esquema de vacunación del niño/a
+    'ev_1' => 0,
+    'ev_inc' => 3,
+    'ev_0' => 5,
+
+    // 10) Escolarización de los hijos de entre 4 y 18 años
+    'eh_0' => 0,
+    'eh_1' =>  0,
+    'eh_mi_sines' => 3,
+    'eh_may_sines' => 4,
+    'eh_none_edad' => 5,
+
+    // 11) En caso de madre adolescente
+    'ma_sc' => 0,
+    'ma_ee1' => 3,
+    'ma_ee0' => 5,
+
+    // 12) ¿Cuántos miembros del grupo familiar conviviente trabajan?
+    'mg_1' => 0,
+    'mg_x' => 2,
+    'mg_0' => 5,
+
+    // 13) ¿Por lo menos uno de los que trabaja es menor de edad?
+    'me_0' => 0,
+    'me_16-18' => 2,
+    'me_-16' => 5,
+
+    // 14) ¿Dónde se ubica el ingreso familiar?
+    'inf_+10454' => 0,
+    'inf_6570-10454' => 2,
+    'inf_3884-6570' => 3,
+    'inf_-3884' => 5,
+
+    // 15) ¿Reciben desde el Gobierno algún beneficio social?
+    'bs_0' => 0,
+    'bs_1mas_ps' => 3,
+    'bs_0plan_sine' => 5,
+
+    // 16) Tipo de vivienda donde habita la familia
+    'tv_casadepto' => 0,
+    'tv_villa' => 3,
+    'tv_inquilinato' => 3,
+    'tv_hotel' => 3,
+    'tv_rancho' => 4,
+    'tv_casatomada' => 4,
+    'tv_colectiva' => 4,
+    'tv_calle' => 5,
+
+    // 17) La vivienda en donde habita la familia es:
+    'vhf_propia_ct' => 0,
+    'vhf_propia_st' => 1,
+    'vhf_renta_cc' => 1,
+    'vhf_renta_sc' => 2,
+    'vhf_prestada' => 2,
+    'vhf_notiene' => 5,
+
+    // 18) ¿Cuántas personas duermen por habitación?
+    'dph_1' => 0,
+    'dph_2' => 0,
+    'dph_3-4' => 2,
+    'dph_4-6' => 3,
+    'dph_6-10' => 4,
+    'dph_+=10' => 5,
+
+    // 19) Servicios básicos con los que cuenta la vivienda
+    'sb_todos' => 0,
+    'sb_algun_gas' => 2,
+    'sb_algun_garrafa' => 3,
+    'sb_no' => 5,
+
+    // 20) Surgió durante la entrevista algún tipo de problemática social
+    // que requiera la intervención de algún organismo específico
+    'ps_0' => 0,
+    'ps_1' => 5,
+  ];
+
+  $fields = $entity->getFields();
+
+  foreach ($fields as $field) {
+    if (preg_match('/^field_/', $field->getFieldDefinition()->getName())) {
+      foreach ($field as $item) {
+        if (isset($puntage[$item->value])) {
+          $indice_vulnerabilidad += $puntage[$item->value];
+        }
+      }
+    }
+  }
+
+  $nino = $entity->field_nino->entity;
+  $nino->set('field_indice_vulnerabilidad', $indice_vulnerabilidad);
+  drupal_set_message('El índice de vulnerabilidad fue calculado con un valor de ' . $indice_vulnerabilidad);
+  $nino->save();
+}
+
+
+function sime_indice_vulnerabilidad_entity_update(Drupal\Core\Entity\EntityInterface $entity) {
+  // For debugging
+  // TODO: REMOVE
+  sime_indice_vulnerabilidad_entity_insert($entity);
+}

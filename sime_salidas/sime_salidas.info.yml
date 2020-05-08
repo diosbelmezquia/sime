@@ -1,0 +1,5 @@
+name: 'SIME - Salidas'
+type: module
+description: Graficos y salidas especiales para SIME
+package: SIME
+core: '8.x'

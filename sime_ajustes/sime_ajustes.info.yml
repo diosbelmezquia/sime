@@ -1,0 +1,8 @@
+name: 'SIME'
+type: module
+description: Ajustes varios para SIME.
+package: SIME
+core: '8.x'
+dependencies:
+- block
+- sime_formularios_desarrollo

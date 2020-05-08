@@ -1,0 +1,5 @@
+name: 'Indice de Vulnerabilidad'
+type: module
+description: Calcular el Indice de Vulnerabilidad de un Grupo Familiar.
+package: SIME
+core: '8.x'

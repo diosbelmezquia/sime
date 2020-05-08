@@ -1,0 +1,5 @@
+name: 'SIME - Inasistencias'
+type: module
+description: Registro de inasistencias de niños.
+package: SIME
+core: '8.x'

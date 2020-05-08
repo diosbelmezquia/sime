@@ -1,0 +1,785 @@
+@import "paragraphs";
+
+// Permitir que se muestre bien el chosen(select) en los vertical-tabs.
+.vertical-tabs {
+    overflow: visible !important;
+    ul.vertical-tabs__menu { list-style: none !important; }
+}
+
+input[type=radio]:checked {
+    background: #0074BD !important;
+    border: 1px solid #0074BD !important;
+    box-shadow: inset 0px 0px 0px 3px #fff !important;
+}
+
+td > a.button--primary { margin-right: 0px; }
+
+.view-ninos {
+    th#view-nothing-1-table-column { padding-left: 23px; }
+    td > a.button--primary {
+      margin-top: 5px;
+      margin-left: 10px;
+      margin-bottom: 5px;
+    }
+}
+
+fieldset.asociacion_civil-node-cpi {
+  .field--name-field-referente > .field__label {
+    text-transform: uppercase;
+  }
+  fieldset {
+    padding-top: 10px;
+    > legend {
+      display: none !important;
+    }
+  }
+}
+
+.js fieldset .field--widget-entity-reference-paragraphs > div > div> table > thead {
+  display: none;
+}
+
+.js .field--widget-entity-reference-paragraphs {
+  .paragraph-type-top {
+    display: none;
+  }
+
+  table.field-multiple-table  .paragraph-type-top {
+    display: flex;
+    line-height: 2;
+    float: right;
+    .paragraph-type-title {
+      display: none;
+    }
+  }
+
+  .field-multiple-drag {
+    vertical-align: middle;
+    padding: 0 12px;
+  }
+}
+
+.field--name-field-inscripcion,
+.field--name-field-vacantes-salas,
+.field--name-field-familiares,
+.field--name-field-datos-antropometricos {
+  @include paragraphs_float();
+  @include paragraphs_nodragging();
+}
+
+.field--name-field-inscripcion {
+  .field--name-field-observaciones {
+    clear: both;
+  }
+}
+
+.field--name-field-familiares {
+  .form-wrapper
+
+  .field--name-field-nombre-apellido,
+  .field--name-field-documento-id {
+    input {
+      width: 200px
+    }
+  }
+
+  .field--name-field-telefonos {
+    clear: both;
+    margin-top: 25px;
+  }
+}
+
+// Formulario Supervision Anual
+.node-supervision-anual-form {
+    details.seguridad-higiene {
+        fieldset {
+            .form-required:after { display:none; }
+            .paragraphs-subform {
+              overflow:hidden;
+
+              .field--name-field-vencido-novencido,
+              .field--name-field-realizado-norealizado {
+                float: left;
+                margin-right: 10%;
+                legend { display:none; }
+              }
+
+              .field--type-datetime {
+                float: left;
+                margin-top: 3%;
+                > h4 {
+                  display: none;
+                }
+              }
+            }
+        }
+    }
+
+}
+
+// Formulario CPI
+.formulario-cpi {
+   .field--name-field-pisodepto { display:none; }
+}
+
+// Supervisiones node_view
+.supervisiones-field-group {
+  border: 1px solid #ddd;
+  width: 45%;
+  margin-right: 1%;
+  float: left;
+  border-radius: 4px;
+  h3 {
+    background-color: #0084d7;
+    padding: 1em;
+    margin: 0px;
+    color: #fff;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+  .field--type-boolean, .field--type-list-string {
+    border-bottom: 1px solid #ddd;
+    padding: 1em;
+    overflow: hidden;
+    .field__item {
+      color: #5fb85c;
+      font-size: 2em;
+      float: right;
+    }
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+  .field--type-string-long {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    padding: 1em;
+    clear: both;
+    overflow: hidden;
+    .field__item { clear: both; }
+  }
+}
+
+ .seguridad-higiene-row {
+    overflow: hidden;
+    clear: both;
+    width: 100%;
+    fieldset.fieldset_boolean {
+      float: left;
+      min-width: 270px !important;
+      margin-right: 1em !important;
+      .field--type-boolean {
+        float: left;
+        margin-right: 3em;
+      }
+      .field--type-datetime { float: left; }
+    }
+    .field--type-string-long {
+      color: #8a6d3b;
+      background-color: #fcf8e3;
+      border-color: #faebcc;
+      padding: 1em;
+      clear: both;
+      overflow: hidden;
+      .field__item { clear: both; }
+    }
+}
+
+.sa-boolean-row {
+  padding: 1em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.supervisiones-row {
+  overflow: hidden;
+  clear: both;
+  margin-bottom: 1em;
+  .supervisiones-field-group { margin-bottom: 1%; }
+  .field--type-string-long {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    padding: 1em;
+    clear: both;
+    overflow: hidden;
+    .field__item { clear: both; }
+  }
+}
+
+// Responsive bloques supervisiones.
+@media (max-width: 769px) {
+  .supervisiones-row {
+    .supervisiones-field-group,
+    .field--type-string-long {
+      width: 100%;
+    }
+  }
+}
+
+.field--name-field-n-libretas-sanitarias,
+.field--name-field-n-cursos-manipuladores {
+  float: left;
+  margin-right: 20px;
+}
+
+.cpi-section {
+  overflow: hidden;
+  margin-bottom: 1em;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  float: left;
+  > div {
+      float: left;
+      margin-right: 3em;
+    }
+  .field--name-field-cpi {
+    border-right: 1px solid #ddd;
+    .field__label {
+      background-color: #0084d7;
+      padding: 1em;
+      margin: 0px;
+      color: #fff;
+      text-align: center;
+      font-size: 25px;
+    }
+    .field__item {
+      padding: 1em;
+      text-align: center;
+    }
+  }
+  .field--name-field-re-periodo,
+  .field--name-field-proveedor,
+  .field--name-field-responsable-cocina,
+  .field--name-field-fecha-planificacion {
+    margin-top: 34px;
+    .field__item { text-align: center; }
+  }
+}
+
+fieldset.servicio-nutricion {
+  margin: 1em !important;
+  padding: 1em !important;
+  legend { display: none; }
+  .fieldset-wrapper {
+    > div {
+      float: left;
+      margin-right: 3em;
+    }
+  }
+}
+
+// Estilos radios form nutricion.
+details.form-nutricion-bool .details-wrapper > div { padding: 5px; }
+details.form-supervision-anual-bool .details-wrapper > div { padding: 5px; }
+details.form-supervision-anual-bool .details-wrapper fieldset .fieldset-wrapper,
+details.form-nutricion-bool .details-wrapper fieldset .fieldset-wrapper {
+  > div { padding: 5px; }
+  .form-radios {
+    display: inline-flex;
+    > div {
+      margin-right: 10px;
+    }
+  }
+}
+fieldset .fieldset-wrapper .field--name-field-cn-servicio-desayuno,
+fieldset .fieldset-wrapper .field--name-field-cn-servicio-almuerzo {
+  .form-wrapper .paragraphs-subform > div.field--type-list-string {
+    padding: 5px !important;
+  }
+}
+
+
+// Estilos radios paragraph no-se.
+.radios-no-se .field--type-list-string fieldset {
+  legend { display:none; }
+  .form-radios {
+    display: inline-flex;
+    margin-top: 10px;
+    > div { margin-right: $input_margin_right; }
+  }
+}
+
+// Estilos radios paragraph no-colabora.
+.radios-no-colabora .field--type-list-string fieldset {
+  legend { display:none; }
+  .form-radios {
+    display: inline-flex;
+    margin-top: 10px;
+    > div { margin-right: $input_margin_right; }
+  }
+}
+
+// Estilos formuario inasistencias.
+form.sime-inasistencias-form {
+  .form-item-field-listado-cpis,
+  .form-item-field-fecha-inasistencias,
+  .form-item-field-sala-inasistencias,
+  .form-item-field-nombre-inasistencias {
+    margin-right: $input_margin_right;
+    float:left;
+  }
+  > input#edit-buscar {
+    margin-top: 27px;
+    margin-left: 0px;
+  }
+/*   table#ninos-sala-table {
+    thead > tr > th:last-child, tbody > tr > td:last-child { display:none !important; }
+  } */
+}
+// Ajustes datos antropometricos.
+.datos-antropometricos-nino-js {
+  fieldset.fieldset-antropometrico {
+    margin-top: 20px !important;
+    clear: both !important;
+  }
+  .field--name-field-diagnostico {
+    clear: both !important;
+  }
+}
+
+// Bloque diagnostico antromometrico, node view.
+.nino-block-diagnostico-antromometrico {
+  > .diagnostico-acta {
+    float: right;
+    > a, h3 {
+      float: left;
+    }
+  }
+  margin-bottom: 20px;
+  width: auto;
+  background-color: #e9e9e4;
+  padding: 20px;
+  border: 1px solid #c0c0c0;
+  overflow: hidden;
+  .nino-block-diagnostico-antromometrico-talla,
+  .nino-block-diagnostico-antromometrico-peso,
+  .nino-block-diagnostico-antromometrico-imc {
+    margin-bottom: 20px;
+    width: auto;
+    background-color: #fcfcfa;
+    padding: 20px;
+    border: 1px solid #c0c0c0;
+  }
+  ul.diagnostico-lista {
+    list-style: none;
+    padding: 0px;
+    margin: 0px;
+    overflow: hidden;
+    > li {
+      margin-right: 5px;
+      float: left;
+      padding: 10px;
+      margin-bottom: 5px;
+    }
+    > li.cuadro-rojo {
+      background-color: red;
+      color: #fff;
+    }
+    > li.cuadro-amarillo {
+      background-color: #fffa0c;
+      color: #000;
+    }
+    > li.cuadro-verde {
+      background-color: #2ca507;
+      color: #fff;
+    }
+  }
+}
+
+// Estilos para tablas semestral.
+table.listado-semestral {
+  tbody > tr > td {
+    border: 1px solid #6a676780;
+    text-align: center;
+  }
+  thead > tr > th {
+    border: 1px solid #6a676780;
+    text-align: center;
+    color: #000;
+    font-weight: bold;
+    &:first-child {
+      background-color: #99ccfb;
+    }
+    &:nth-last-child(2) {
+      background-color: #99ccfb;
+    }
+    &:last-child {
+      background-color: #99ccfb;
+    }
+  }
+  tfoot > tr > td {
+    text-align: center;
+    border: 1px solid #6a676780;
+    color: #000;
+    font-weight: bold;
+    &:nth-last-child(2) {
+      background-color: #99ccfb;
+    }
+    &:last-child {
+      background-color: #99ccfb;
+    }
+  }
+  td.amarillo {
+    background-color: #fccd3e;
+    color: #000;
+  }
+  td.rojo {
+    background-color: red;
+    color: #fff;
+  }
+  td.verde {
+    background-color: #c9f6cc;
+    color: #000;
+  }
+  td.pasta {
+    background-color: #fcf398;
+    color: #000;
+  }
+}
+
+//Estilos para formulario select cpis multiple.
+form[class^="form-cpis-"] {
+  .form-type-select {
+    float: left;
+    margin-right: 20px;
+    margin-top: 0px;
+  }
+  .form-actions {
+    float: left;
+    margin-top: 20px;
+  }
+}
+
+// Estilos para vista-listado de ninos por diagnostico.
+.view-display-id-page_nino_diagnostico {
+  table {
+    // fila roja.
+    tr.bajo-peso-bt, tr.bajo-peso {
+      background-color: red;
+      color: #fff;
+      td > a { color: #fff; }
+    }
+    // fila amarilla.
+    tr.riesgo-bp-bt, tr.riesgo-bp {
+      background-color: #fccd3e;
+      color: #000;
+      td > a { color: #000; }
+    }
+    // fila verde.
+    tr.sobrepeso-bt, tr.sobrepeso {
+      background-color: #c9f6cc;
+      color: #000;
+      td > a { color: #000; }
+    }
+    // fila color pasta.
+    tr.obesidad-bt, tr.obesidad {
+      background-color: #fcf398;
+      color: #000;
+      td > a { color: #000; }
+    }
+  }
+}
+
+// CT Planificacion
+form#node-planificacion-form,
+form#node-planificacion-edit-form {
+  fieldset .form-wrapper {
+    padding: 5px;
+    fieldset .form-radios {
+      display: inline-flex;
+      > div {
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+// Estilos formuario cuadro resumen casos.
+form.sime-salidas-resumen-form {
+  .form-item-field-edad,
+  .form-item-field-genero {
+    margin-right: $input_margin_right;
+    float:left;
+  }
+  input#edit-submit {
+    margin-top: 30px;
+    margin-left: 0px;
+  }
+  p.texto-cuadro-resumen {
+    clear: both;
+    float: left;
+    margin-top: 0px;
+  }
+}
+
+// Estilos para la relacion comuna-cpis en lo select multiples de CPI.
+div.comunas-container {
+  overflow: hidden;
+  > span {
+    float: left;
+    font-weight: bold;
+    margin-right: 5px;
+  }
+  > ul {
+    list-style: none;
+    margin: 0px;
+    padding: 0px;
+    float: left;
+    display: inline-flex;
+    > li {
+      padding-right: 5px;
+    }
+  }
+}
+
+// Estilos node acta.
+.acta-nino {
+  width: 70%;
+  margin: auto;
+  .text-header {
+    position: relative;
+    text-align: center;
+    overflow: hidden;
+    p.current-date {
+      float: right;
+    }
+    .acta-escudo {
+      width: 5%;
+    }
+    .imprimir-acta {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+  }
+  .text-body {
+
+  }
+  .text-footer {
+
+  }
+}
+
+// Estilos boton -Ver Acta- node view nino.
+article.node--type-nino {
+  > div.node__content {
+  position: relative;
+    > a.ver-acta {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+  }
+}
+
+fieldset.casos {
+  background-color: #d5d5d3 !important;
+}
+
+table#field-casos-values tbody > tr {
+  border-bottom: 0px !important;
+  &:hover {
+    background: none !important;
+  }
+}
+
+// Estilos paragraph casos.
+fieldset.bloque-informe {
+  .field--name-field-tipo-informe,
+  .field--name-field-fecha-inicio,
+  .field--name-field-tipo-caso,
+  .field--name-field-fecha-situacion,
+  .field--name-field-tipo-caso-otro {
+    float: left;
+    margin-right: $input_margin_right;
+  }
+  .field--name-field-tipo-caso-otro {
+    margin-top: $input_margin_right;
+  }
+  details.field-group-notificacion {
+    clear: both;
+    float: left;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    .field--name-field-fecha-envio,
+    .field--name-field-sade,
+    .field--name-field-intervencion,
+    .field--name-field-defensorias {
+      float: left;
+      margin-right: $input_margin_right;
+    }
+    .field--name-field-intervencion {
+      clear: both;
+    }
+    .field--name-field-fecha-envio {
+      margin-bottom: $input_margin_right;
+    }
+  }
+  .field--name-field-situacion,
+  .field--name-field-organismos,
+  .field--name-field-resolucion {
+    clear: both;
+    width: 100%;
+  }
+}
+
+// Estilos CPI field en node view nino.
+article.node--type-nino {
+  .node__content {
+    .field--name-field-cpi {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      float: left;
+      margin-bottom: $input_margin_right;
+      .field__label {
+        background-color: #0084d7;
+        padding: 1em;
+        color: #fff;
+        text-align: center;
+        font-size: 25px;
+        float: left;
+      }
+      .field__item {
+        padding: 1em;
+        float: right;
+        line-height: 3;
+      }
+    }
+    .field--name-field-datos-personales {
+      clear:both;
+      .field--name-field-foto {
+        float: right;
+      }
+    }
+  }
+}
+//Estilos para cuadro resumen.
+table.cuadro-resumen {
+  thead > tr > th {
+    border: 1px solid #6a676780;
+    color: #000;
+    font-weight: bold;
+  }
+  tbody {
+    tr > td { border: 1px solid #6a676780; }
+    tr.subtotal {
+      background-color: #99ccfb;
+      color: #000;
+      font-weight: bold;
+    }
+  }
+  tfoot > tr > td {
+    color: #000;
+    font-weight: bold;
+    border: 1px solid #6a676780;
+  }
+}
+
+//Estilos para tabla/salida de observaciones negativas.
+table.observaciones-negativas {
+  td.observaciones-negativas-celda {
+    width: 60%;
+  }
+}
+
+//Estilos CT personal.
+form.node-personal-form,
+form.node-personal-edit-form {
+  .field--name-field-p-nombres,
+  .field--name-field-p-apellidos,
+  .field--name-field-p-dni {
+    float: left;
+    width: 30%;
+    margin-right: $input_margin_right;
+  }
+  .field--name-field-p-dni {
+    width: 20%;
+  }
+  .field--name-field-p-cargo-funcion,
+  .field--name-field-p-titulo {
+    float: left;
+    width: 30%;
+    margin-right: $input_margin_right;
+  }
+  .field--name-field-p-titulo {
+    float: left;
+    width: 30%;
+    margin-right: $input_margin_right;
+  }
+  .field--name-field-p-tipo-jornada {
+    float: left;
+    width: 20%;
+    margin-right: $input_margin_right;
+  }
+  fieldset {
+    padding-top: 45px;
+    width: 100%;
+    margin-right: 20px;
+    clear: both;
+    > div.fieldset-wrapper {
+      .field--name-field-p-libreta-sanitaria {
+        float: left;
+        margin-right: $input_margin_right;
+        > fieldset.fieldgroup {
+          padding-top: 0px;
+          > legend {
+            display:none;
+          }
+        }
+        > fieldset.fieldgroup .fieldset-wrapper > div.form-radios {
+          display: inline-flex;
+          > div {
+            margin-right: 10px;
+          }
+        }
+      }
+      .field--name-field-p-fecha-libreta {
+        float: left;
+      }
+    }
+  }
+}
+
+//Estilos para fieldgroup en node view nino.
+article.node--type-nino {
+  .view-display-id-block_resumen_casos,
+  .view-display-id-block_desarrollo_infantil,
+  .field--name-field-indice-vulnerabilidad {
+    margin-bottom: 20px;
+    width: auto;
+    background-color: #fcfcfa;
+    padding: 20px;
+    border: 1px solid #c0c0c0;
+  }
+}
+
+fieldset.fieldset-desarrollo-mediciones {
+  clear: both !important;
+}
+
+// Estilos para impresion.
+@media print {
+  h1.page-title, nav.breadcrumb {
+    display: none;
+  }
+  .acta-nino {
+    width: 100%;
+    .text-header {
+      .imprimir-acta {
+        display: none;
+      }
+      text-align: center;
+      overflow: hidden;
+      p.current-date {
+        float: right;
+      }
+      .acta-escudo {
+        width: 5%;
+      }
+    }
+  }
+}
+

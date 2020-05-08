@@ -1,0 +1,328 @@
+<?php
+
+use Drupal\node\NodeInterface;
+use Drupal\node\Entity\Node;
+use Drupal\paragraphs\Entity\Paragraph;
+
+function sime_inasistencias_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if ($form_id == 'sime_inasistencias_form') {
+    $form['#submit'][] = 'Drupal\sime_inasistencias\Controller\NinosController::sime_inasistencias_ninos_form_submit';
+  }
+
+  if ($form_id == 'sime_inasistencias_listado_form') {
+    $form['#submit'][] = 'Drupal\sime_inasistencias\Controller\NinosController::sime_inasistencias_listado_ninos_form_submit';
+  }
+}
+
+// Devuelve un array asociativo de las salas con su nombre.
+function sime_inasistencias_get_salas($cpi, $nombre_sala = '') {
+  $options = $options_nombres = [];
+  $sala_name = '';
+  $cpi_node = Node::load($cpi);
+  $cpi_salas = $cpi_node->field_vacantes_salas;
+
+  if (!empty($cpi_salas)) {
+    foreach ($cpi_salas as $key => $sala) {
+      $field = $sala->entity->field_salas;
+      $sala_nombre = $field->getFieldDefinition()
+        ->getFieldStorageDefinition()
+        ->getOptionsProvider('value', $field->getEntity())->getPossibleOptions()[$field->value];
+      $options[$field->value] = $sala_nombre;
+      $machine_nombre_sala = $field->value.'-'.$key;
+      $options_nombres[$sala_nombre][$machine_nombre_sala] = $sala->entity->field_nombre->value;
+      if ($machine_nombre_sala == $nombre_sala) {
+        $sala_name = $field->value;
+      }
+    }
+  }
+  return $names = [
+    'salas' => $options,
+    'sala_nombre' => $options_nombres,
+    'nombre_pertenece' => $sala_name,
+  ];
+}
+
+// Devuelve los ninos ausentes en una sala y una fecha.
+// Tambien devuelve el motivo de la inasistencia.
+function sime_inasistencias_get_ninos_ausentes($cpi, $fecha) {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'inasistencias');
+  $node_ids = $query->execute();
+  $motivo = [];
+    if (!empty($node_ids)) {
+    foreach ($node_ids as $nid) {
+      $node_inasistencias = Node::load($nid);
+      foreach ($node_inasistencias->field_inasistencias->referencedEntities() as $field) {
+        $f_fecha = $field->field_fecha->value;
+        $f_nino_cpi = isset($node_inasistencias->field_nino->entity) && isset($node_inasistencias->field_nino->entity->field_cpi->entity);
+        $f_nino_cpi = $f_nino_cpi ? $node_inasistencias->field_nino->entity->field_cpi->entity->id() : NULL;
+        $check_inscripto = $f_nino_cpi ? $node_inasistencias->field_nino->entity->field_inscripto->value : FALSE;
+        if ($check_inscripto && $f_nino_cpi && $f_fecha == $fecha && $f_nino_cpi == $cpi) {
+          $nino_id = $node_inasistencias->field_nino->entity->id();
+          $motivo[$nino_id][] = $field->field_inasistencia_motivo->value;
+        }
+      }
+    }
+  }
+  return $motivo;
+}
+
+// Obtener ninos inscriptos en una sala especifica.
+function sime_inasistencias_get_ninos($cpi, $sala, $nombre_sala, $fecha) {
+  $ninos_ausentes = sime_inasistencias_get_ninos_ausentes($cpi, $fecha);
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'inscripcion');
+  $node_ids = $query->execute();
+  $nombre_completo = [];
+  if (!empty($node_ids)) {
+    foreach ($node_ids as $nid) {
+      $node_inscripcion = Node::load($nid);
+      foreach ($node_inscripcion->field_inscripcion as $field) {
+        $field_sala_nino = $field->get('entity')->getTarget()->getValue();
+        $f_sala = $field_sala_nino->field_sala->value;
+        $f_sala_nombre = $field_sala_nino->field_sala_nombre->value;
+        $f_nino = $node_inscripcion->field_nino->entity;
+        if (isset($f_nino)) {
+          $f_nino_cpi = $f_nino->field_cpi->entity->id();
+          $nino_inscripto = $field_sala_nino->field_inscripto->value;
+          $check_inscripto = $f_nino->field_inscripto->value;
+          if ($check_inscripto && $nino_inscripto && $f_sala == $sala && $f_sala_nombre == $nombre_sala && $f_nino_cpi == $cpi) {
+            $nid = $node_inscripcion->field_nino->entity->id();
+            $nino_ids[$nid] = $nid;
+          }
+        }
+      }
+    }
+    if (!empty($nino_ids)) {
+      $nino_ids = array_unique($nino_ids);
+      //Si uno de los ninos esta/estaba ausente, cargar el nino ausente.
+      foreach (array_keys($ninos_ausentes) as $na) {
+        if (in_array($na, $nino_ids)) {
+          $nino_ids[$na] = $ninos_ausentes[$na];
+        }
+      }
+      foreach (array_keys($nino_ids) as $nid) {
+        $nino = Node::load($nid);
+        foreach ($nino->field_datos_personales as $field) {
+          $datos_personales = $field->get('entity')->getTarget()->getValue();
+          $nombre = $datos_personales->field_nombres->value;
+          $apellido = $datos_personales->field_apellidos->value;
+          $nombre_completo[] = [
+            'nombre' => $nombre. ' '.$apellido,
+            'nino_id' => $nino->id(),
+            // Cargar el motivo para un nino ya ausente.
+            'ausente' => is_array($nino_ids[$nid]) ? $nino_ids[$nid] : 0,
+          ];
+        }
+      }
+    }
+  }
+  return $nombre_completo;
+}
+
+// Agregar nueva inasistencia.
+function sime_inasistencias_add_inasistencia($nino, $fecha, $motivo) {
+  $tiene_ausencias = sime_inasistencias_nino_tiene_ausencias($nino->id());
+  // Si es 1ra ausencia del nino, crear nuevo registro(nodo).
+  if ($fecha > $nino->field_fecha_envio_inasistencias->value) {
+    $nino->field_fecha_envio_inasistencias->value = $fecha;
+    $nino->save();
+  }
+  if (!$tiene_ausencias) {
+    $paragraph = sime_inasistencias_add_nueva_ausencia($fecha, $motivo);
+    $node = Node::create([
+     'type' => 'inasistencias',
+     'title' => 'Nueva inasistencia',
+     'body' => 'Nueva inasistencia para el nino de ID ' . $nino->id(),
+     'field_nino' => $nino,
+     'field_inasistencias' => [
+          'target_id' => $paragraph->id(),
+          'target_revision_id' => $paragraph->getRevisionId(),
+      ],
+    ]);
+  }
+  else {
+    // Cargar CT inasistencias, con listado(paragraph) de ausencias.
+    $node = Node::load($tiene_ausencias);
+    $paragraphs = $node->field_inasistencias->referencedEntities();
+    // Actulizar motivo en caso que sea la misma fecha.
+    $motivo_actualizado = FALSE;
+    foreach ($paragraphs as $paragraph) {
+      $fecha_ausencia = $paragraph->field_fecha->value;
+      if ($fecha_ausencia == $fecha) {
+        $paragraph->field_inasistencia_motivo->value = $motivo;
+        $motivo_actualizado = TRUE;
+        $paragraph->save();
+      }
+    }
+    // Si no es la misma fecha de la ausencia. Agregar nueva ausencia en esa fecha.
+    if (!$motivo_actualizado) {
+      // Si el nino ya tiene ausencias pasadas entonces agregar una nueva a su registro(nodo).
+      $paragraph = sime_inasistencias_add_nueva_ausencia($fecha, $motivo);
+      $node->field_inasistencias->appendItem($paragraph);
+      $node->save();
+    }
+    // Saber si un nino tiene más de 10 ausencias seguidas(sin motivo/salud/viaje).
+    $inasistencias = $node->field_inasistencias->referencedEntities();
+    $ausencias_seguidas = sime_inasistencias_ausencias_seguidas($nino, $inasistencias);
+  }
+  sime_inasistencias_revision($node);
+}
+
+// Saber si un nino tiene más de 10 ausencias seguidas(sin motivo/salud/viaje).
+function sime_inasistencias_ausencias_seguidas($nino, $inasistencias, $fecha_envio = NULL) {
+  $save_nino = function($nino) {
+    $nino->field_ausente->value = FALSE;
+    $nino->field_motivo->value = '_none';
+    $nino->save();
+  };
+  $fecha_ausencia = $fecha_motivo = $FECHA_AUSENCIAS_SIN_FIN = [];
+  $cant = 0;
+  if (empty($inasistencias)) {
+    $save_nino($nino);
+    return FALSE;
+  }
+  foreach ($inasistencias as $ausencia) {
+    if (isset($ausencia->field_fecha->value)) {
+      $fecha_ausencia[] = $ausencia->field_fecha->value;
+      $fecha_motivo[$ausencia->field_fecha->value] = $ausencia->field_inasistencia_motivo->value;
+    }
+  }
+  if (empty($fecha_ausencia)) {
+    $save_nino($nino);
+    return FALSE;
+  }
+  //Si es viernes, agregar sabado y domingo como ausencias seguidas.
+  $FECHA_AUSENCIAS_SIN_FIN = $fecha_ausencia;
+  foreach ($fecha_ausencia as $i => $fecha) {
+    $date1 = new \Drupal\Core\Datetime\DrupalDateTime($fecha);
+    if ($date1->format('D') == 'Vie') {
+      $sab = $date1->modify('+1 day')->format('Y-m-d');
+      $dom = $date1->modify('+1 day')->format('Y-m-d');
+      if (!in_array($sab, $fecha_ausencia)) {
+        array_push($fecha_ausencia, $sab);
+      }
+      if (!in_array($dom, $fecha_ausencia)) {
+        array_push($fecha_ausencia, $dom);
+      }
+    }
+  }
+  if (count($fecha_ausencia) <= 10) {
+    $save_nino($nino);
+    return FALSE;
+  }
+  rsort($fecha_ausencia);
+  rsort($FECHA_AUSENCIAS_SIN_FIN);
+  $fecha_ausencia = array_slice($fecha_ausencia, 0, 11);
+  $fecha_ausencia_SIN_FIN = array_slice($FECHA_AUSENCIAS_SIN_FIN, 0, 11);
+  if ($fecha_envio && $fecha_envio != $nino->field_fecha_envio_inasistencias->value) {
+    $save_nino($nino);
+    return FALSE;
+  }
+  if (reset($FECHA_AUSENCIAS_SIN_FIN) != $nino->field_fecha_envio_inasistencias->value) {
+    $save_nino($nino);
+    return FALSE;
+  }
+  //Ver ausencias seguidas.
+  foreach ($fecha_ausencia as $i => $fecha) {
+    $date1 = new \Drupal\Core\Datetime\DrupalDateTime($fecha);
+    if (count($fecha_ausencia) == $i+1) {
+      return FALSE;
+    }
+    $date2 = new \Drupal\Core\Datetime\DrupalDateTime($fecha_ausencia[$i+1]);
+    $interval = $date1->diff($date2)->format('%a');
+    if ($date1 > $date2 && $interval == 1) {
+      $cant++;
+      if (($cant + 1) > 10 ) {
+        $nino->field_ausente->value = TRUE;
+        $nino->field_motivo->value = $fecha_motivo[reset($FECHA_AUSENCIAS_SIN_FIN)];
+        $nino->save();
+        return TRUE;
+      }
+      else {
+        $save_nino($nino);
+      }
+    }
+    else {
+      $cant = 0;
+    }
+  }
+}
+
+// Quitar inasistencia.
+function sime_inasistencias_remove_inasistencia($nino, $fecha) {
+  $tiene_ausencias = sime_inasistencias_nino_tiene_ausencias($nino->id());
+  if ($fecha > $nino->field_fecha_envio_inasistencias->value) {
+    $nino->field_fecha_envio_inasistencias->value = $fecha;
+    $nino->save();
+  }
+  if ($tiene_ausencias) {
+    $node = Node::load($tiene_ausencias);
+    $paragraphs = $node->field_inasistencias->referencedEntities();
+    foreach ($paragraphs as $paragraph) {
+      $fecha_ausencia = $paragraph->field_fecha->value;
+      if ($fecha_ausencia == $fecha) {
+        $paragraph->delete();
+        sime_inasistencias_revision($node);
+      }
+    }
+    // Saber si un nino tiene más de 10 ausencias seguidas(sin motivo/salud/viaje).
+    $node = Node::load($tiene_ausencias);
+    $inasistencias = $node->field_inasistencias->referencedEntities();
+    if ($fecha > $nino->field_fecha_envio_inasistencias->value) {
+      $nino->field_fecha_envio_inasistencias->value = $fecha;
+      $nino->save();
+    }
+    $ausencias_seguidas = sime_inasistencias_ausencias_seguidas($nino, $inasistencias, $fecha);
+  }
+  else {
+    $nino->field_ausente->value = FALSE;
+    $nino->field_motivo->value = '_none';
+    $nino->save();
+  }
+}
+
+// Crear nueva revision.
+function sime_inasistencias_revision(&$node) {
+  $current_user = \Drupal::currentUser();
+  $node->setNewRevision(TRUE);
+  $node->revision_log = "Nueva revisión para el nodo(Inasistencia) de id: " . $node->id();
+  $node->setRevisionCreationTime(REQUEST_TIME);
+  $node->setRevisionUserId($current_user->id());
+  $node->save();
+}
+
+
+// Saber si un nino ya tiene ausencias registradas.
+function sime_inasistencias_nino_tiene_ausencias($nino_id) {
+  $query = \Drupal::entityQuery('node');
+  $query->condition('type', 'inasistencias');
+  $node_ids = $query->execute();
+  if (!empty($node_ids)) {
+    foreach ($node_ids as $nid) {
+      $node_inasistencias = Node::load($nid);
+      $field_nino = $node_inasistencias->field_nino->entity ? $node_inasistencias->field_nino->entity->id() : NULL;
+      if ($field_nino && $nino_id == $node_inasistencias->field_nino->entity->id()) {
+        return $node_inasistencias->id();
+      }
+    }
+  }
+  return FALSE;
+}
+
+// Agregar nueva ausencia al nino.
+function sime_inasistencias_add_nueva_ausencia($fecha, $motivo) {
+  $paragraph = Paragraph::create([
+    'type' => 'inasistencias',
+    'field_fecha' => [
+        'value' => $fecha,
+        'format' => 'date',
+    ],
+    'field_inasistencia_motivo' => [
+        'value' => $motivo,
+        'format' => 'list_text',
+    ],
+  ]);
+  $paragraph->save();
+  return $paragraph;
+}

@@ -1,0 +1,7 @@
+sime_ajustes.admin:
+  path: '/admin/sime'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'SIME'
+  requirements:
+    _permission: 'access toolbar'

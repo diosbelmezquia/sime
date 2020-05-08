@@ -1,0 +1,10 @@
+services:
+  sime_ajustes.route_subscriber:
+    class: Drupal\sime_ajustes\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }
+
+  sime_ajustes.access_check.entity:
+    class: Drupal\sime_ajustes\Access\SimeAjustesAccessCheck
+    tags:
+      - { name: access_check, applies_to: _sime_ajustes_access }

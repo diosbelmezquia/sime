@@ -1,0 +1,7 @@
+inasistencias.form:
+ path: '/admin/sime/cpi/inasistencias'
+ defaults:
+   _controller: '\Drupal\sime_inasistencias\Controller\NinosController::view'
+   _title: 'Inasistencias'
+ requirements:
+    _permission: 'registro inasistencias'

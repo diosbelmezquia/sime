@@ -1,0 +1,312 @@
+td.rojo {
+  background-color: red;
+  color: #fff;
+}
+
+fieldset.fieldset-documento .fieldset-wrapper > div {
+  float: left;
+}
+fieldset.fieldset-documento .fieldset-wrapper .field--name-field-numero-dni {
+  margin-right: 20px;
+}
+fieldset.fieldset-documento .fieldset-wrapper .field--name-field-sin-dni {
+  margin-right: 20px;
+  margin-top: 25px;
+}
+fieldset.fieldset-documento .fieldset-wrapper .field--name-field-tipo-documento {
+  margin-right: 20px;
+}
+fieldset.fieldset-documento .fieldset-wrapper .field--name-field-documento-id {
+  width: 20%;
+  margin-right: 20px;
+}
+
+fieldset.fieldset-datos-personales .fieldset-wrapper > div {
+  float: left;
+  margin-right: 20px;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-nombres {
+  width: 30%;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-apellidos {
+  width: 30%;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-fecha-de-nacimiento {
+  width: 16%;
+  clear: both;
+  margin-right: 0px;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-edad-gestacional > div {
+  margin-top: 0px;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-foto {
+  width: 30%;
+}
+fieldset.fieldset-datos-personales .fieldset-wrapper .field--name-field-foto .form-type-managed-file {
+  margin-top: -4px;
+}
+
+fieldset.fieldset-direccion .paragraphs-subform > div {
+  float: left;
+  margin-right: 20px;
+}
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-calle {
+  width: 40%;
+}
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-numero {
+  width: 10%;
+}
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-jurisdiccion {
+  clear: both;
+}
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-pisodepto,
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-localidad,
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-casa,
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-villa,
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-manzana {
+  width: 25%;
+}
+fieldset.fieldset-direccion .paragraphs-subform .field--name-field-codigo-postal {
+  width: 15%;
+}
+
+.tabledrag-toggle-weight-wrapper {
+  display: none !important;
+}
+
+.field-multiple-drag {
+  display: none;
+}
+
+.field--type-image .description, .field--type-file .description {
+  display: none;
+}
+
+.home-toolbar-tab {
+  display: none !important;
+}
+
+.field--name-status {
+  display: none;
+}
+
+fieldset.referente-asociacion-civil {
+  clear: both;
+}
+
+/*
+ * Targetting layout
+ */
+.layout-region-node-main, .layout-region-node-footer {
+  float: none !important;
+  width: 100% !important;
+}
+
+.layout-region-node-secondary {
+  display: none;
+}
+
+table.field-multiple-table .paragraph-type-top {
+  float: right;
+}
+
+.formulario-cpi .field--name-field-nombre-directora,
+.formulario-cpi .field--name-field-telefono,
+.formulario-cpi .field--name-field-correo-electronico {
+  float: left;
+  width: 30%;
+  margin-right: 20px;
+}
+.formulario-cpi .field--name-field-telefono {
+  width: 15%;
+}
+.formulario-cpi .field--name-field-asociacion-civil {
+  float: left;
+}
+.formulario-cpi fieldset .field--name-field-ano-firma,
+.formulario-cpi fieldset .field--name-field-fin-convenio {
+  float: left;
+  margin-right: 20px;
+  width: 15%;
+}
+.formulario-cpi fieldset.datos-director {
+  clear: both;
+}
+.formulario-cpi fieldset.datos-director .paragraphs-subform .field--name-field-documento-tipo {
+  float: left;
+  margin-right: 20px;
+}
+.formulario-cpi fieldset.datos-director .paragraphs-subform .field--name-field-documento-id {
+  float: left;
+  margin-right: 20px;
+  width: 20%;
+}
+.formulario-cpi fieldset.datos-director .paragraphs-subform .field--name-field-nombres,
+.formulario-cpi fieldset.datos-director .paragraphs-subform .field--name-field-apellidos {
+  width: 30%;
+  clear: both;
+}
+
+.formulario-personal .field--name-field-pe-funcion,
+.formulario-personal .field--name-field-pe-forma-contratacion {
+  float: left;
+  margin-right: 20px;
+}
+.formulario-personal .field--name-field-pe-forma-contratacion .form-type-radio {
+  float: left;
+  margin-right: 20px;
+}
+.formulario-personal .field--name-field-pe-capacitaciones,
+.formulario-personal .field--name-field-pe-observaciones {
+  float: left;
+  width: 100%;
+}
+.formulario-personal table#field-pe-licencias-values tbody td.field-multiple-drag {
+  display: none;
+}
+.formulario-personal table#field-pe-licencias-values tbody .paragraphs-subform > div {
+  float: left;
+  margin-right: 20px;
+}
+.formulario-personal table#field-pe-licencias-values tbody .paragraphs-subform .field--name-field-fecha-inicio {
+  width: 20%;
+}
+.formulario-personal table#field-pe-licencias-values tbody .paragraphs-subform .field--name-field-fecha-fin {
+  width: 20%;
+}
+.formulario-personal table#field-pe-licencias-values tbody .paragraphs-subform .field--name-field-motivo-faltar {
+  width: 35%;
+}
+
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper > div {
+  float: left;
+  margin-right: 20px;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper > div label {
+  padding-left: 6%;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper .field--name-field-re-saldo-periodo {
+  float: none;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper .field--name-field-re-saldo-periodo label {
+  padding-left: 1%;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper > fieldset {
+  clear: both;
+  display: block;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper > fieldset .fieldset-wrapper > div {
+  float: left;
+  margin-right: 20px;
+  width: 20%;
+}
+form.node-rendicion-form details#edit-group-resumen-general .details-wrapper > fieldset .fieldset-wrapper > div label {
+  padding-left: 6%;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper {
+  min-height: 190px;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper > div {
+  float: left;
+  margin-right: 20px;
+  padding-bottom: 2%;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper .field--name-field-documento-id {
+  width: 20%;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper .field--name-field-nombres {
+  width: 30%;
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper .field--name-field-apellidos {
+  width: 30%;
+}
+form.node-rendicion-form .field-group-html-element details.relacion-dependencia .details-wrapper .field--name-field-funcion {
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper {
+  min-height: 195px;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper > div {
+  float: left;
+  margin-right: 20px;
+  padding-bottom: 2%;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper .field--name-field-cuit {
+  width: 10%;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper .field--name-field-nombres, form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper .field--name-field-apellidos {
+  width: 30%;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper .field--name-field-nro-comprobante {
+  width: 20%;
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.personal-monotributo .details-wrapper .field--name-field-monotributista-monto {
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper {
+  min-height: 210px;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper > div {
+  float: left;
+  margin-right: 20px;
+  padding-bottom: 2%;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-cuit-proveedor {
+  width: 15%;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-proveedor {
+  width: 45%;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-concepto {
+  width: 30%;
+  margin-bottom: 3px;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-tipo-comprobante {
+  width: 27%;
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-nro-comprobante {
+  width: 15%;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-fecha-comprobante {
+  width: 46%;
+  margin-right: 0px;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-foto-comprobante {
+  clear: both;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-monto label {
+  margin-left: 10px;
+}
+form.node-rendicion-form .field-group-html-element details.rendicion-gastos .details-wrapper .field--name-field-monto input {
+  width: 50%;
+}
+
+.node-casos-form fieldset.casos .paragraphs-subform > div {
+  float: left;
+  margin-right: 20px;
+  padding-bottom: 2%;
+}
+.node-casos-form fieldset.casos .paragraphs-subform .field--name-field-resolucion,
+.node-casos-form fieldset.casos .paragraphs-subform .field--name-field-organismos,
+.node-casos-form fieldset.casos .paragraphs-subform .field--name-field-situacion,
+.node-casos-form fieldset.casos .paragraphs-subform .field--name-field-adjunto {
+  clear: both;
+  width: 100%;
+}
+.node-casos-form fieldset.casos .paragraphs-subform .field-group-notificacion {
+  overflow: hidden;
+  clear: both;
+}
+
+.documentacion-nutricion > div {
+  float: left;
+  width: 30%;
+  margin-right: 20px;
+}
+.documentacion-nutricion .field--name-field-fecha-vencimiento {
+  width: 15%;
+  margin-right: 0px;
+}

@@ -1,0 +1,262 @@
+$input_margin_right: 20px;
+$input_nombre_apellido: 30%;
+$input_numero_documento: 20%;
+
+//Generales.
+td.rojo {
+  background-color: red;
+  color: #fff;
+}
+
+@mixin paragraphs_hideremove() {
+  .paragraphs-dropbutton-wrapper input[name$="_remove"] {
+    display: none;
+  }
+}
+
+@mixin paragraphs_float() {
+  .paragraph-type-top {
+    position: relative;
+    top: 22px;
+    right: 10px;
+  }
+
+  .paragraphs-subform {
+    position: relative;
+    margin-top: 18px;
+    left: 10px;
+    max-width: 85%;
+
+    .form-wrapper {
+      float: left;
+      margin-right: 10px;
+    }
+
+    .field--type-boolean {
+      padding-top: 30px;
+    }
+  }
+}
+
+@mixin paragraphs_nodragging() {
+  .field-multiple-drag {
+    display: none;
+    margin-left: 10px;
+  }
+}
+
+// Fieldset DOCUMENTO
+@mixin paragraphs_documento() {
+ fieldset.fieldset-documento {
+        .fieldset-wrapper {
+            > div { float: left; }
+          .field--name-field-numero-dni { margin-right: $input_margin_right; }
+          .field--name-field-sin-dni {
+            margin-right: $input_margin_right;
+            margin-top: 25px;
+           }
+          .field--name-field-tipo-documento { margin-right: $input_margin_right; }
+          .field--name-field-documento-id {
+            width: $input_numero_documento;
+            margin-right: $input_margin_right;
+          }
+        }
+    }
+}
+
+// Fieldset DATOS PERSONALES
+@mixin paragraphs_datos_personales() {
+    fieldset.fieldset-datos-personales {
+        .fieldset-wrapper {
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+            }
+            .field--name-field-nombres { width: $input_nombre_apellido; }
+            .field--name-field-apellidos { width: $input_nombre_apellido; }
+            .field--name-field-fecha-de-nacimiento {
+                    width: 16%;
+                    clear: both;
+                    margin-right: 0px;
+            }
+            .field--name-field-edad-gestacional > div { margin-top: 0px; }
+            .field--name-field-foto {
+                width: 30%;
+                .form-type-managed-file { margin-top: -4px; }
+            }
+       }
+    }
+}
+
+// Fieldset DIRECCION
+@mixin paragraphs_direccion() {
+    fieldset.fieldset-direccion {
+       .paragraphs-subform {
+           > div {
+                float: left;
+                margin-right: $input_margin_right;
+           }
+       .field--name-field-calle { width: 40%; }
+       .field--name-field-numero { width: 10%; }
+       .field--name-field-jurisdiccion { clear: both; }
+       .field--name-field-pisodepto,
+       .field--name-field-localidad,
+       .field--name-field-casa,
+       .field--name-field-villa,
+       .field--name-field-manzana {
+          width: 25%;
+        }
+       .field--name-field-codigo-postal { width: 15%;}
+       }
+    }
+}
+
+// Motivo a Faltar. Licencias
+@mixin paragraphs_motivo_faltar() {
+    table#field-pe-licencias-values {
+      tbody {
+          td.field-multiple-drag { display: none; }
+          .paragraphs-subform {
+              > div {
+                  float: left;
+                  margin-right: $input_margin_right;
+              }
+              .field--name-field-fecha-inicio { width: 20%; }
+              .field--name-field-fecha-fin { width: 20%; }
+              .field--name-field-motivo-faltar { width: 35%; }
+          }
+      }
+    }
+}
+
+// Paragraphs casos.
+@mixin paragraphs_casos() {
+    fieldset.casos {
+       .paragraphs-subform {
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+                padding-bottom: 2%;
+            }
+            .field--name-field-resolucion,
+            .field--name-field-organismos,
+            .field--name-field-situacion,
+            .field--name-field-adjunto {
+                clear: both;
+                width: 100%;
+            }
+            .field-group-notificacion {
+              overflow: hidden;
+              clear: both;
+            }
+       }
+    }
+}
+
+// Datos Director/ra
+@mixin paragraphs_datos_director() {
+    fieldset.datos-director {
+         clear: both;
+        .paragraphs-subform {
+            .field--name-field-documento-tipo {
+                float: left;
+                margin-right: $input_margin_right;
+            }
+
+            .field--name-field-documento-id {
+                float: left;
+                margin-right: $input_margin_right;
+                width: $input_numero_documento;
+            }
+            .field--name-field-nombres,
+            .field--name-field-apellidos {
+                width: $input_nombre_apellido;
+                clear: both;
+            }
+        }
+    }
+}
+
+// Form Rendicion:Relacion de dependencia
+@mixin paragraphs_relacion_dependencia() {
+    details.relacion-dependencia {
+        .details-wrapper {
+            min-height: 190px;
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+                padding-bottom: 2%;
+            }
+            .field--name-field-documento-id { width: $input_numero_documento; }
+            .field--name-field-nombres {
+                width: $input_nombre_apellido;
+                clear: both;
+            }
+            .field--name-field-apellidos {
+                width: $input_nombre_apellido;
+            }
+            .field--name-field-funcion {
+                clear: both;
+            }
+        }
+    }
+}
+
+// Form Rendicion:Personal monotributo
+@mixin paragraphs_personal_monotributo() {
+    details.personal-monotributo {
+        .details-wrapper {
+            min-height: 195px;
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+                padding-bottom: 2%;
+            }
+            .field--name-field-cuit { width: 10%; }
+            .field--name-field-nombres, .field--name-field-apellidos {
+                width: $input_nombre_apellido;
+            }
+            .field--name-field-nro-comprobante {
+                width: $input_numero_documento;
+                clear: both;
+            }
+            .field--name-field-monotributista-monto { clear: both; }
+        }
+    }
+}
+
+// Form Rendicion:Gastos
+@mixin paragraphs_gastos() {
+    details.rendicion-gastos {
+        .details-wrapper {
+            min-height: 210px;
+            > div {
+                float: left;
+                margin-right: $input_margin_right;
+                padding-bottom: 2%;
+            }
+            .field--name-field-cuit-proveedor { width: 15%; }
+            .field--name-field-proveedor { width: 45%; }
+            .field--name-field-concepto {
+                width: 30%;
+                margin-bottom: 3px;
+            }
+            .field--name-field-tipo-comprobante {
+                width: 27%;
+                clear: both;
+            }
+            .field--name-field-nro-comprobante { width: 15%; }
+            .field--name-field-fecha-comprobante {
+                    width: 46%;
+                    margin-right: 0px;
+            }
+            .field--name-field-foto-comprobante {
+                clear: both;
+            }
+            .field--name-field-monto {
+                label { margin-left: 10px; }
+                input { width: 50%; }
+            }
+        }
+    }
+}

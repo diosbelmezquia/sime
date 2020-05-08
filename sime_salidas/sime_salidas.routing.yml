@@ -1,0 +1,151 @@
+sime_salidas.inscriptos:
+  path: '/admin/sime/cpi/inscriptos'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\InscriptosController::view'
+    _title: 'Indicadores de inscripción'
+  requirements:
+    _permission: 'access salidas inscriptos'
+
+sime_salidas.ausentismo:
+  path: '/admin/salidas/ninos/ausentismo'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\PorcientoAusentismoController::view'
+    _title: 'Porciento de Ausentismo'
+  requirements:
+    _permission: 'admin salidas ausentismo'
+
+sime_salidas_cuadro_anual_na:
+  path: '/admin/salidas/supervision/cuadro-anual-na'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\CuadroAnualNaController::mostrar'
+    _title: 'Cuadro anual de No observados'
+  requirements:
+    _permission: 'admin cuadro anual na'
+
+sime_salidas_cuadro_anual_no:
+  path: '/admin/salidas/supervision/cuadro-anual-no'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\CuadroAnualNoController::mostrar'
+    _title: 'Cuadro anual de observaciones negativas'
+  requirements:
+    _permission: 'admin cuadro anual no'
+
+sime_salidas_cuadro_resumen:
+  path: '/admin/salidas/casos/cuadro-resumen'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\CuadroResumenController::mostrar'
+    _title: 'Cuadro resumen'
+  requirements:
+    _permission: 'admin cuadro resumen'
+
+sime_salidas_ninos_salas:
+  path: '/admin/salidas/ninos/ninos-salas'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\NinosSalasController::view'
+    _title: 'Niños por sala'
+  requirements:
+    _permission: 'admin ninos salas'
+
+sime_salidas_observaciones_negativas:
+  path: '/admin/salidas/supervision/observaciones-negativas'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\ObservacionesNegativasController::view'
+    _title: 'Últimas observaciones negativas'
+  requirements:
+    _permission: 'admin observaciones negativas'
+
+sime_salidas_porciento_casos_tipo:
+  path: '/admin/salidas/casos/tipo'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\CasosTipoController::view'
+    _title: 'Porciento de casos por tipo'
+  requirements:
+    _permission: 'admin casos tipo'
+
+sime_salidas.admin:
+  path: '/admin/salidas'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Salidas'
+  requirements:
+    _permission: 'admin menu salidas'
+
+sime_salidas_nutricion.admin:
+  path: '/admin/salidas/nutricion'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Salidas nutricion'
+  requirements:
+    _permission: 'admin menu salidas nutricion'
+
+sime_salidas_casos.admin:
+  path: '/admin/salidas/casos'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Salidas casos'
+  requirements:
+    _permission: 'admin menu salidas casos'
+
+sime_salidas_ninos.admin:
+  path: '/admin/salidas/ninos'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Salidas niños'
+  requirements:
+    _permission: 'admin menu salidas ninos'
+
+sime_salidas_cuadro_anual.admin:
+  path: '/admin/salidas/supervision'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'Cuadro anual'
+  requirements:
+    _permission: 'admin menu salidas supervision'
+
+sime_semestral_uno:
+  path: '/admin/salidas/nutricion/semestral1'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\Semestral1Controller::view'
+    _title: 'Semestral 1'
+  requirements:
+    _permission: 'admin cuadro semestral'
+
+sime_semestral_dos:
+  path: '/admin/salidas/nutricion/semestral2'
+  defaults:
+    _controller: '\Drupal\sime_salidas\Controller\Semestral2Controller::view'
+    _title: 'Semestral 2'
+  requirements:
+    _permission: 'admin cuadro semestral'
+
+sime_salidas_acta:
+  path: '/node/{node}/acta'
+  defaults:
+    _title: 'Acta'
+    _controller: '\Drupal\sime_salidas\Controller\ActaController::view'
+  requirements:
+    _permission: 'admin nino acta'
+
+sime_salidas_diagnostico_tiempo:
+  path: '/admin/salidas/nutricion/diagnostico_tiempo'
+  defaults:
+    _title: 'Diagnóstico / Tiempo transcurrido'
+    _controller: '\Drupal\sime_salidas\Controller\DiagnosticoTiempoController::view'
+  requirements:
+    _permission: 'admin salida recuadros'
+
+sime_salidas_diagnositco_gestacional:
+  path: '/admin/salidas/nutricion/diagnositco_gestacional'
+  defaults:
+    _title: 'Diagnóstico / Edad gestacional'
+    _controller: '\Drupal\sime_salidas\Controller\DiagnositcoGestacionalController::view'
+  requirements:
+    _permission: 'admin salida recuadros'
+
+sime_salidas_desarrollo_infantil.admin:
+  path: '/admin/salidas/desarrollo/infantil'
+  defaults:
+    _title: 'Desarrollo infantil'
+    _controller: '\Drupal\sime_salidas\Controller\DesarrolloInfantilController::mediciones'
+  requirements:
+    _permission: 'admin menu salidas desarrollo'

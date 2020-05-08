@@ -1,0 +1,6 @@
+sime_ajustes.admin:
+  route_name: sime_ajustes.admin
+  parent: system.admin
+  description: 'Administer SIME related content.'
+  title: 'SIME'
+  weight: -20

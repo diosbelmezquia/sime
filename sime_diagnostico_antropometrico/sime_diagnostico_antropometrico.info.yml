@@ -1,0 +1,5 @@
+name: 'SIME'
+type: module
+description: Diagnostico para datos antropometricos.
+package: SIME
+core: '8.x'

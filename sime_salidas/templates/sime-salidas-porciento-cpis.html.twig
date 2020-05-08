@@ -1,0 +1,19 @@
+<div style="width: 50%">
+  {% for class in cant_ausentes %}
+    {% if class %}
+      <canvas id="{{ class }}"></canvas>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<div style="width: 50%">
+  {% if ninos_por_salas is not null %}
+    <canvas id="{{ ninos_por_salas }}"></canvas>
+  {% endif %}
+  {% if ninos_por_salas_hombre is not null %}
+    <canvas id="{{ ninos_por_salas_hombre }}"></canvas>
+  {% endif %}
+  {% if ninos_por_salas_mujer is not null %}
+    <canvas id="{{ ninos_por_salas_mujer }}"></canvas>
+  {% endif %}
+</div>

@@ -1,0 +1,15 @@
+sime_salidas.chartjs:
+  js:
+    js/chartjs.js: {}
+  dependencies:
+    - sime_salidas/chartjs
+
+chartjs:
+  remote: http://www.chartjs.org/
+  version: 2.7.2
+  license:
+    name: MIT
+    url: https://raw.githubusercontent.com/chartjs/Chart.js/master/LICENSE.md
+    gpl-compatible: true
+  js:
+    https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.bundle.min.js: { type: external, minified: true }

@@ -1,0 +1,107 @@
+<?php
+
+/**
+ * Implements hook_entity_insert().
+ */
+
+use Drupal\sime_salidas\UtilityTrait;
+
+function sime_diagnostico_antropometrico_entity_insert(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'datos_antropometricos') {
+    foreach ($entity->referencedEntities() as $type) {
+      if ($type instanceof \Drupal\paragraphs\Entity\Paragraph) {
+        $paragraph_datos[] = $type;
+      }
+    }
+    if (!empty($paragraph_datos)) {
+      $fecha_reciente = '';
+      $medicion = 0;
+      foreach ($paragraph_datos as $i => $field) {
+        $talla_edad = $field->field_t_e->value;
+        $peso_edad = $field->field_p_e->value;
+        $imc_edad = $field->field_imc_e->value;
+        $fecha_medicion = $field->field_fecha->value;
+        if ($fecha_medicion > $fecha_reciente) {
+          $fecha_reciente = $fecha_medicion;
+          $medicion = $i;
+        }
+
+        $diagnostico_talla = '';
+        if ($talla_edad && $talla_edad < 3) {
+          $diagnostico_talla = '_bt';
+        }
+
+        $percentilo_peso = '';
+        if ($imc_edad) {
+          $percentilo_peso = $imc_edad;
+        }
+        elseif ($peso_edad) {
+          $percentilo_peso = $peso_edad;
+        }
+
+        if ($percentilo_peso) {
+          if ($percentilo_peso < 3) {
+            $diagnostico_peso = 'bajo_peso'; //Bajo peso.
+          }
+          elseif ($percentilo_peso >= 3 && $percentilo_peso < 10) {
+            $diagnostico_peso = 'riesgo_bp'; //Riesgo de bajo peso.
+          }
+          elseif ($percentilo_peso >= 10 && $percentilo_peso < 85) {
+            $diagnostico_peso = 'normal'; //Normal.
+          }
+          elseif ($percentilo_peso > 85 && $percentilo_peso < 97) {
+            $diagnostico_peso = 'sobrepeso'; //Sobrepeso.
+          }
+          elseif ($percentilo_peso > 97) {
+            $diagnostico_peso = 'obesidad'; //Obesidad.
+          }
+          //Diagnostico final:
+          $field->field_diagnostico->value = $diagnostico_peso . $diagnostico_talla;
+          $field->save();
+        }
+        else {
+          $field->field_diagnostico->value = '_none';
+          $field->save();
+        }
+      }
+      $entity->field_nino->entity->field_diagnostico->value = $paragraph_datos[$medicion]->field_diagnostico->value;
+      $entity->field_nino->entity->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function sime_diagnostico_antropometrico_entity_update(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() == 'node' && $entity->bundle() == 'datos_antropometricos') {
+    sime_diagnostico_antropometrico_entity_insert($entity);
+  }
+}
+
+// Obtener allowed_values de Diagnosticos.
+function sime_diagnostico_antropometrico_diagnosticos() {
+  //Get trait function.
+  return UtilityTrait::sime_diagnosticos();
+}
+
+// Obtener Ultimo diagnostico.
+function sime_diagnostico_antropometrico_ultima_medicion($mediciones) {
+  if (empty($mediciones)) {
+    return 'No hay definido';
+  }
+  elseif (count($mediciones) > 1) {
+    $ultima_medicion = array_pop($mediciones);
+  }
+  else {
+    $ultima_medicion = reset($mediciones);
+  }
+  if ($ultima_medicion->field_diagnostico->value == '_none') {
+    return 'No hay definido';
+  }
+  else {
+    $diagnosticos = sime_diagnostico_antropometrico_diagnosticos();
+    $ultima_medicion = $diagnosticos[$ultima_medicion->field_diagnostico->value];
+    return $ultima_medicion;
+  }
+}
